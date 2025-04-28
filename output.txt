@@ -1,0 +1,718 @@
+Respons dari ollama tidak muncul di chatbotnya, harusnya ketika pesan terkirim maka akan ada pop up atau bublle chat balasan (loading apabilan sedang menunggu proses dari ollamanya). coba analisis codenya
+📁 app/api/
+    📁 app/api/chat/
+        📄 app/api/chat/route.ts:
+            import { NextResponse } from "next/server"
+            
+            // Allow streaming responses up to 30 seconds
+            export const maxDuration = 100
+            
+            
+            export async function POST(req: Request) {
+              const { messages } = await req.json()
+            
+              // Get the last message from the user
+              const lastMessage = messages[messages.length - 1].content
+            
+              // Create a system prompt for Ollama
+              const systemPrompt =
+                "You are PentestAI, an advanced penetration testing assistant. You help security professionals with penetration testing tasks, vulnerability assessments, and security advice. Provide detailed, technical responses focused on cybersecurity and ethical hacking techniques."
+            
+              // Prepare the request for Ollama
+              const ollama_url = process.env.OLLAMA_URL || "http://127.0.0.1:11434"
+              const model = process.env.OLLAMA_MODEL || "pentest-ai"
+            
+              try {
+                // Create a new ReadableStream to stream the response
+                const stream = new ReadableStream({
+                  async start(controller) {
+                    try {
+                      const response = await fetch(`${ollama_url}/api/generate`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          model: model,
+                          messages: [ // Format baru Ollama (berbasis messages)
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: lastMessage }
+                          ],
+                          stream: true,
+                        }),
+                        
+                      });
+            
+                      if (!response.ok) {
+                        const error = await response.text()
+                        throw new Error(`Ollama API error: ${error}`)
+                      }
+            
+                      const reader = response.body?.getReader()
+                      if (!reader) {
+                        throw new Error("Response body is null")
+                      }
+            
+                      // Process the stream
+                      while (true) {
+                        const { done, value } = await reader.read()
+                        if (done) break
+            
+                        // Convert the chunk to text
+                        const chunk = new TextDecoder().decode(value)
+            
+                        // Parse the chunk as JSON
+                        const lines = chunk.split("\n").filter((line) => line.trim() !== "")
+            
+                        for (const line of lines) {
+                          try {
+                            const parsedChunk = JSON.parse(line);
+                            if (parsedChunk.message?.content) { // ✅ Parsing struktur Ollama
+                              const dataChunk = `data: ${JSON.stringify({ text: parsedChunk.message.content })}\n\n`;
+                            }
+                          } catch (e) {
+                            console.error("Error parsing JSON:", e);
+                          }
+                        }
+                      }
+            
+                      // Send the final chunk
+                      controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"))
+                      controller.close()
+                    } catch (error) {
+                      console.error("Error in stream processing:", error)
+                      controller.error(error)
+                    }
+                  },
+                })
+                
+                // Return the stream as a response
+                return new Response(stream, {
+                  headers: {
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive",
+                  },
+                })
+              } catch (error) {
+                console.error("Error:", error)
+                return NextResponse.json({ error: "Failed to process request" }, { status: 500 })
+              }
+            
+              
+            }
+            ;📄 app/globals.css:
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+    
+    @layer base {
+      :root {
+        --background: 0 0% 13%;
+        --foreground: 210 40% 98%;
+    
+        --card: 0 0% 15%;
+        --card-foreground: 210 40% 98%;
+    
+        --popover: 0 0% 15%;
+        --popover-foreground: 210 40% 98%;
+    
+        --primary: 210 40% 98%;
+        --primary-foreground: 0 0% 15%;
+    
+        --secondary: 0 0% 70%;
+        --secondary-foreground: 210 40% 98%;
+    
+        --muted: 0 0% 25%;
+        --muted-foreground: 215 20% 65%;
+    
+        --accent: 0 0% 25%;
+        --accent-foreground: 210 40% 98%;
+    
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+    
+        --border: 0 0% 20%;
+        --input: 0 0% 20%;
+        --ring: 0 0% 70%;
+    
+        --radius: 0.5rem;
+    
+        /* Sidebar variables */
+        --sidebar-background: 0 0% 15%;
+        --sidebar-foreground: 210 40% 98%;
+        --sidebar-primary: 210 40% 98%;
+        --sidebar-primary-foreground: 0 0% 15%;
+        --sidebar-accent: 0 0% 25%;
+        --sidebar-accent-foreground: 210 40% 98%;
+        --sidebar-border: 0 0% 20%;
+        --sidebar-ring: 0 0% 70%;
+      }
+    }
+    
+    @layer base {
+      * {
+        @apply border-border;
+      }
+      body {
+        @apply bg-background text-foreground;
+      }
+    
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+    
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+      }
+    
+      ::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 128, 0.3);
+        border-radius: 10px;
+      }
+    
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(128, 128, 128, 0.5);
+      }
+    }
+    
+    .gradient-text {
+      @apply text-transparent bg-clip-text;
+      background-image: linear-gradient(to right, #a0a0a0, #c0c0c0, #808080);
+    }
+    
+    .gradient-bg {
+      background-image: linear-gradient(135deg, #808080, #a0a0a0);
+    }
+    
+    .gradient-btn {
+      background-image: linear-gradient(135deg, #808080, #a0a0a0);
+      @apply hover:opacity-90 transition-all duration-300 text-white font-medium;
+    }
+    
+    .glass-effect {
+      background: rgba(30, 30, 30, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(128, 128, 128, 0.2);
+    }
+    
+    /* Hover effects */
+    .hover-effect {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-effect:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 8px rgba(128, 128, 128, 0.4);
+    }
+    
+    .hover-input {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-input:hover:not(:disabled) {
+      border-color: rgba(128, 128, 128, 0.5);
+      box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.2);
+    }
+    
+    .hover-pulse {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-pulse:hover {
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(128, 128, 128, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(128, 128, 128, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(128, 128, 128, 0);
+      }
+    }
+    
+    .button-hover {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .button-hover::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%);
+      transform-origin: 50% 50%;
+    }
+    
+    .button-hover:hover::after {
+      animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+      }
+      20% {
+        transform: scale(25, 25);
+        opacity: 0.3;
+      }
+      100% {
+        opacity: 0;
+        transform: scale(40, 40);
+      }
+    }
+    
+    .glow-text {
+      text-shadow: 0 0 10px rgba(128, 128, 128, 0.7);
+    }
+    
+    .glow-border {
+      box-shadow: 0 0 5px rgba(128, 128, 128, 0.7);
+      border-color: rgba(128, 128, 128, 0.7) !important;
+    }
+    
+    .glow {
+      box-shadow: 0 0 15px rgba(128, 128, 128, 0.7);
+    }
+    
+    /* Fix for text wrapping in minimized sidebar */
+    .group-data-\[collapsible\=icon\]:w-\[--sidebar-width-icon\] .truncate {
+      width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      opacity: 0;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 640px) {
+      .mobile-hidden {
+        display: none;
+      }
+    
+      .mobile-full-width {
+        width: 100% !important;
+      }
+    
+      .mobile-padding {
+        padding: 0.5rem !important;
+      }
+    
+      .mobile-text-sm {
+        font-size: 0.875rem !important;
+      }
+    }
+    
+    /* Mobile menu buttons */
+    .mobile-menu-button {
+      position: fixed;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 9999px;
+      background-color: rgba(31, 31, 31, 0.8);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(75, 75, 75, 0.5);
+      transition: all 0.2s ease;
+    }
+    
+    .mobile-menu-button:hover {
+      background-color: rgba(50, 50, 50, 0.9);
+    }
+    
+    /* Improved mobile responsiveness */
+    @media (max-width: 768px) {
+      .sidebar-trigger-visible {
+        display: block !important;
+      }
+    
+      .mobile-padding-top {
+        padding-top: 4rem !important;
+      }
+    }
+📄 app/layout.tsx:
+    import type React from "react"
+    import type { Metadata } from "next"
+    import { Inter } from "next/font/google"
+    import "./globals.css"
+    import { ThemeProvider } from "@/components/theme-provider"
+    import { SidebarProvider } from "@/components/ui/sidebar"
+    import { RouteGuard } from "@/components/route-guard"
+    
+    const inter = Inter({ subsets: ["latin"] })
+    
+    export const metadata: Metadata = {
+      title: "PentestAI - Penetration Testing Assistant",
+      description: "AI-powered penetration testing assistant",
+        generator: 'v0.dev'
+    }
+    
+    export default function RootLayout({
+      children,
+    }: Readonly<{
+      children: React.ReactNode
+    }>) {
+      return (
+        <html lang="en" suppressHydrationWarning>
+          <body className={`${inter.className} bg-black`}>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
+              <RouteGuard>
+                <SidebarProvider>{children}</SidebarProvider>
+              </RouteGuard>
+            </ThemeProvider>
+          </body>
+        </html>
+      )
+    }
+📁 app/login/
+    📄 app/login/page.tsx:
+        "use client"
+        
+        import { useState } from "react"
+        import Link from "next/link"
+        import { Shield, Eye, EyeOff } from "lucide-react"
+        import { Button } from "@/components/ui/button"
+        import { Input } from "@/components/ui/input"
+        import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+        
+        export default function LoginPage() {
+          const [showPassword, setShowPassword] = useState(false)
+        
+          return (
+            <div className="flex min-h-screen items-center justify-center bg-black p-4">
+              <div className="absolute inset-0 grid-pattern opacity-20"></div>
+              <Card className="w-full max-w-md border-gray-800 bg-black/80 backdrop-blur-md">
+                <CardHeader className="space-y-1 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full gradient-bg">
+                    <Shield className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold gradient-text">Welcome back</CardTitle>
+                  <CardDescription className="text-gray-400">Enter your credentials to access your account</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="name@example.com"
+                      className="bg-gray-900/70 border-gray-800 focus:border-blue-600"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="password" className="text-sm font-medium">
+                        Password
+                      </label>
+                      <Link href="/forgot-password" className="text-xs text-blue-500 hover:text-blue-400">
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4">
+                  <Button className="w-full gradient-btn">Sign In</Button>
+                  <div className="text-center text-sm text-gray-400">
+                    Don&apos;t have an account?{" "}
+                    <Link href="/register" className="text-blue-500 hover:text-blue-400">
+                      Sign up
+                    </Link>
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+          )
+        }
+📄 app/page.tsx:
+    "use client"
+    
+    import { useState } from "react"
+    import { MainSidebar } from "@/components/main-sidebar"
+    import { ChatInterface } from "@/components/chat-interface"
+    import { ToolsSidebar } from "@/components/tools-sidebar"
+    import { SidebarInset } from "@/components/ui/sidebar"
+    import { Menu, Wrench } from "lucide-react"
+    import { Button } from "@/components/ui/button"
+    
+    export default function Home() {
+      const [activeTool, setActiveTool] = useState<string | null>(null)
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+      const [mobileToolsOpen, setMobileToolsOpen] = useState(false)
+    
+      return (
+        <div className="flex h-screen w-full overflow-hidden bg-[#212121]">
+          <MainSidebar />
+          <SidebarInset className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden relative">
+              {/* Mobile menu buttons - only visible on small screens */}
+              <div className="md:hidden fixed top-4 left-4 z-50">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-gray-800/80 backdrop-blur-sm border-gray-700 hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </div>
+    
+              <div className="md:hidden fixed top-4 right-4 z-50">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-gray-800/80 backdrop-blur-sm border-gray-700 hover:bg-gray-700"
+                  onClick={() => setMobileToolsOpen(!mobileToolsOpen)}
+                >
+                  <Wrench className="h-5 w-5" />
+                  <span className="sr-only">Toggle Tools</span>
+                </Button>
+              </div>
+    
+              <ChatInterface activeTool={activeTool} />
+            </div>
+          </SidebarInset>
+          <ToolsSidebar onSelectTool={setActiveTool} activeTool={activeTool} />
+        </div>
+      )
+    }
+📁 app/register/
+    📄 app/register/page.tsx:
+        "use client"
+        
+        import { useState } from "react"
+        import Link from "next/link"
+        import { Shield, Eye, EyeOff } from "lucide-react"
+        import { Button } from "@/components/ui/button"
+        import { Input } from "@/components/ui/input"
+        import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+        
+        export default function RegisterPage() {
+          const [showPassword, setShowPassword] = useState(false)
+        
+          return (
+            <div className="flex min-h-screen items-center justify-center bg-black p-4">
+              <div className="absolute inset-0 grid-pattern opacity-20"></div>
+              <Card className="w-full max-w-md border-gray-800 bg-black/80 backdrop-blur-md">
+                <CardHeader className="space-y-1 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full gradient-bg">
+                    <Shield className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold gradient-text">Create an account</CardTitle>
+                  <CardDescription className="text-gray-400">Enter your information to create your account</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="first-name" className="text-sm font-medium">
+                        First name
+                      </label>
+                      <Input
+                        id="first-name"
+                        placeholder="John"
+                        className="bg-gray-900/70 border-gray-800 focus:border-blue-600"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="last-name" className="text-sm font-medium">
+                        Last name
+                      </label>
+                      <Input
+                        id="last-name"
+                        placeholder="Doe"
+                        className="bg-gray-900/70 border-gray-800 focus:border-blue-600"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="name@example.com"
+                      className="bg-gray-900/70 border-gray-800 focus:border-blue-600"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4">
+                  <Button className="w-full gradient-btn">Sign Up</Button>
+                  <div className="text-center text-sm text-gray-400">
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-blue-500 hover:text-blue-400">
+                      Sign in
+                    </Link>
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+          )
+        }
+
+component/chat-interface.tsx:
+"use client"
+
+import { useState, useRef, useEffect } from "react"
+import { useChat } from "ai/react"
+import { Send, Loader2, Cpu } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Card } from "@/components/ui/card"
+import { ToolModal } from "@/components/tool-modal"
+
+interface ChatInterfaceProps {
+  activeTool: string | null
+}
+
+export function ChatInterface({ activeTool }: ChatInterfaceProps) {
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: "/api/chat",
+  })
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isToolModalOpen, setIsToolModalOpen] = useState(false)
+  const [selectedTool, setSelectedTool] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (activeTool) {
+      setSelectedTool(activeTool)
+      setIsToolModalOpen(true)
+    }
+  }, [activeTool])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex items-center justify-between border-b border-gray-800 p-4 mobile-padding">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full gradient-bg hover-pulse">
+                <Cpu className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-lg font-bold gradient-text">PentestAI Assistant</h2>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 mobile-padding">
+            {messages.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center max-w-md glass-effect p-6 rounded-lg mobile-padding">
+                  <h3 className="text-xl font-bold mb-2 gradient-text mobile-text-sm">Welcome to PentestAI</h3>
+                  <p className="text-gray-400 mobile-text-sm">
+                    Your AI-powered penetration testing assistant. Ask questions about security testing, vulnerability
+                    assessment, or use the tools sidebar to access specialized functions.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <Card
+                  key={message.id}
+                  className={`p-4 mobile-padding ${
+                    message.role === "user"
+                      ? "ml-auto bg-gray-700/20 border-gray-700/30 max-w-[80%] sm:max-w-[70%]"
+                      : "bg-gray-900/50 border border-gray-800 max-w-[90%] sm:max-w-[80%]"
+                  } hover-effect`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`rounded-full p-2 ${message.role === "user" ? "gradient-bg" : "bg-gray-800"}`}>
+                      {message.role === "user" ? (
+                        <div className="h-4 w-4 rounded-full bg-white" />
+                      ) : (
+                        <Cpu className="h-4 w-4 text-gray-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium mobile-text-sm">{message.role === "user" ? "You" : "PentestAI"}</div>
+                      <div className="mt-1 text-sm whitespace-pre-wrap mobile-text-sm">{message.content}</div>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="border-t border-gray-800 p-4 mobile-padding">
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <Textarea
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Ask about penetration testing techniques..."
+                className="min-h-12 flex-1 resize-none bg-gray-800 border-gray-700 focus:border-gray-500 hover-input"
+              />
+              <Button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="gradient-btn hover-effect button-hover"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <ToolModal toolId={selectedTool} isOpen={isToolModalOpen} onClose={() => setIsToolModalOpen(false)} />
+    </div>
+  )
+}
