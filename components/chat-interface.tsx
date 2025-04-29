@@ -1,51 +1,112 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { useChat } from "ai/react"
-import { Send, Loader2, Cpu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card } from "@/components/ui/card"
-import { ToolModal } from "@/components/tool-modal"
+import { useState, useRef, useEffect } from "react";
+import { readStreamableValue } from "ai/rsc";
+import { Send, Loader2, Cpu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { ToolModal } from "@/components/tool-modal";
+import { Message } from "@/app/types";
 
 interface ChatInterfaceProps {
-  activeTool: string | null
+  activeTool: string | null;
 }
 
 export function ChatInterface({ activeTool }: ChatInterfaceProps) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
-    api: "/api/chat",
-    id: "pentest-chat", // ID khusus untuk chat session
-    headers: {
-      "Content-Type": "application/json",
-    },
-    onError: (err) => {
-      console.error("Stream Error:", err);
-      // Tambahkan penanganan error UI di sini
-    }
-  });
-  
-  // Tambahkan ini untuk menampilkan error
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isToolModalOpen, setIsToolModalOpen] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
   useEffect(() => {
-    if (error) {
-      console.error("Chat Error:", error);
-      // Anda bisa menambahkan notifikasi error di UI di sini
-    }
-  }, [error]);
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [isToolModalOpen, setIsToolModalOpen] = useState(false)
-  const [selectedTool, setSelectedTool] = useState<string | null>(null)
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     if (activeTool) {
-      setSelectedTool(activeTool)
-      setIsToolModalOpen(true)
+      setSelectedTool(activeTool);
+      setIsToolModalOpen(true);
     }
-  }, [activeTool])
+  }, [activeTool]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+  
+    setIsLoading(true);
+    const userMessage: Message = {
+      role: "user",
+      content: input,
+      id: Date.now().toString()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+  
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: [...messages, userMessage] })
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No reader available");
+  
+      let assistantMessage = "";
+      const decoder = new TextDecoder("utf-8");
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+  
+        // Decode and process the chunk
+        const chunk = decoder.decode(value);
+        assistantMessage += chunk;
+        
+        setMessages(prev => [
+          ...prev.filter(m => m.id !== "assistant-streaming"),
+          { 
+            role: "assistant", 
+            content: assistantMessage,
+            id: "assistant-streaming"
+          }
+        ]);
+      }
+  
+      // Final message
+      setMessages(prev => [
+        ...prev.filter(m => m.id !== "assistant-streaming"),
+        {
+          role: "assistant",
+          content: assistantMessage,
+          id: Date.now().toString()
+        }
+      ]);
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        id: "error-" + Date.now().toString()
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -90,7 +151,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
                       )}
                     </div>
                     <div>
-                      <div className="font-medium mobile-text-sm">{message.role === "user" ? "You" : "PentestAI"}</div>
+                      <div className="font-medium mobile-text-sm">{message.role === "user" ? "You" : "PungoeAI"}</div>
                       <div className="mt-1 text-sm whitespace-pre-wrap mobile-text-sm">{message.content}</div>
                     </div>
                   </div>

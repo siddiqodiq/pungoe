@@ -45,8 +45,6 @@ export function MainSidebar() {
   ]
 
   const settingsItems = [
-    { id: "profile", label: "Profile Settings", icon: User },
-    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Moon },
     { id: "help", label: "Help & Support", icon: HelpCircle },
   ]
@@ -108,7 +106,7 @@ export function MainSidebar() {
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>John Doe</DropdownMenuLabel>
+                <DropdownMenuLabel>Dummy</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
