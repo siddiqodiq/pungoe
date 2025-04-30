@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { readStreamableValue } from "ai/rsc";
-import { Send, Loader2, Cpu } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { Send, Loader2, Cpu, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ToolModal } from "@/components/tool-modal";
 import { Message } from "@/app/types";
+import { CodeBlock } from "@/components/code-block";
+import Prism from 'prismjs';
 
 interface ChatInterfaceProps {
   activeTool: string | null;
 }
+
+
 
 export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -20,15 +23,14 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const [isToolModalOpen, setIsToolModalOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamingRef = useRef(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-  };
-
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Handle active tool changes
   useEffect(() => {
     if (activeTool) {
       setSelectedTool(activeTool);
@@ -36,11 +38,86 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     }
   }, [activeTool]);
 
+  // Process content and identify code blocks
+  const processContent = useCallback((content: string) => {
+    const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = [];
+    let buffer = "";
+    let inCodeBlock = false;
+    let currentLanguage = "text";
+    
+    const lines = content.split('\n');
+    
+    for (const line of lines) {
+      if (line.startsWith('```') && !inCodeBlock) {
+        if (buffer) {
+          parts.push({ type: 'text', content: buffer });
+          buffer = "";
+        }
+        inCodeBlock = true;
+        currentLanguage = line.slice(3).trim() || "text";
+        continue;
+      }
+      
+      if (line === '```' && inCodeBlock) {
+        if (buffer) {
+          parts.push({ type: 'code', content: buffer, language: currentLanguage });
+          buffer = "";
+        }
+        inCodeBlock = false;
+        continue;
+      }
+      
+      buffer += line + '\n';
+    }
+    
+    if (buffer) {
+      parts.push({ 
+        type: inCodeBlock ? 'code' : 'text', 
+        content: buffer,
+        ...(inCodeBlock ? { language: currentLanguage } : {})
+      });
+    }
+    
+    return parts;
+  }, []);
+
+  // Memoized message content renderer
+  const MessageContent = ({ content }: { content: string }) => {
+    const parts = processContent(content);
+    
+    useEffect(() => {
+      // Jalankan highlight setelah komponen dirender
+      Prism.highlightAll();
+    }, [content]);
+  
+    return (
+      <div className="whitespace-pre-wrap">
+        {parts.map((part, index) => {
+          if (part.type === 'code') {
+            return (
+              <CodeBlock 
+                key={`code-${index}`}
+                code={part.content} 
+                language={part.language} 
+              />
+            );
+          }
+          return (
+            <span key={`text-${index}`} className="text-gray-200">
+              {part.content}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-  
+    if (!input.trim() || streamingRef.current) return;
+
     setIsLoading(true);
+    streamingRef.current = true;
     const userMessage: Message = {
       role: "user",
       content: input,
@@ -49,7 +126,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     
     setMessages(prev => [...prev, userMessage]);
     setInput("");
-  
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -58,52 +135,48 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
         },
         body: JSON.stringify({ messages: [...messages, userMessage] })
       });
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No reader available");
-  
-      let assistantMessage = "";
-      const decoder = new TextDecoder("utf-8");
+
+      let fullContent = "";
+      const assistantMessageId = `assistant-${Date.now()}`;
       
-      while (true) {
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: "", 
+        id: assistantMessageId 
+      }]);
+
+      const decoder = new TextDecoder();
+      
+      while (streamingRef.current) {
         const { done, value } = await reader.read();
         if (done) break;
-  
-        // Decode and process the chunk
-        const chunk = decoder.decode(value);
-        assistantMessage += chunk;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
         
-        setMessages(prev => [
-          ...prev.filter(m => m.id !== "assistant-streaming"),
-          { 
-            role: "assistant", 
-            content: assistantMessage,
-            id: "assistant-streaming"
-          }
-        ]);
+        // Optimized update - only modify the target message
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: fullContent } 
+            : msg
+        ));
       }
-  
-      // Final message
-      setMessages(prev => [
-        ...prev.filter(m => m.id !== "assistant-streaming"),
-        {
-          role: "assistant",
-          content: assistantMessage,
-          id: Date.now().toString()
-        }
-      ]);
     } catch (error) {
       console.error("Error:", error);
       setMessages(prev => [...prev, {
         role: "assistant",
         content: "Sorry, I encountered an error. Please try again.",
-        id: "error-" + Date.now().toString()
+        id: `error-${Date.now()}`
       }]);
     } finally {
+      streamingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -150,9 +223,13 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
                         <Cpu className="h-4 w-4 text-gray-400" />
                       )}
                     </div>
-                    <div>
-                      <div className="font-medium mobile-text-sm">{message.role === "user" ? "You" : "PungoeAI"}</div>
-                      <div className="mt-1 text-sm whitespace-pre-wrap mobile-text-sm">{message.content}</div>
+                    <div className="flex-1">
+                      <div className="font-medium mobile-text-sm">
+                        {message.role === "user" ? "You" : "PentestAI"}
+                      </div>
+                      <div className="mt-1 text-sm mobile-text-sm">
+                        <MessageContent content={message.content} />
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -165,23 +242,32 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
             <form onSubmit={handleSubmit} className="flex gap-2">
               <Textarea
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about penetration testing techniques..."
                 className="min-h-12 flex-1 resize-none bg-gray-800 border-gray-700 focus:border-gray-500 hover-input"
+                disabled={isLoading}
               />
               <Button
                 type="submit"
                 disabled={isLoading || !input.trim()}
                 className="gradient-btn hover-effect button-hover"
               >
-                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
               </Button>
             </form>
           </div>
         </div>
       </div>
 
-      <ToolModal toolId={selectedTool} isOpen={isToolModalOpen} onClose={() => setIsToolModalOpen(false)} />
+      <ToolModal 
+        toolId={selectedTool} 
+        isOpen={isToolModalOpen} 
+        onClose={() => setIsToolModalOpen(false)} 
+      />
     </div>
-  )
+  );
 }

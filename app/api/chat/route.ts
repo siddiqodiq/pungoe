@@ -1,3 +1,4 @@
+// app/api/chat/route.ts
 import { NextResponse } from 'next/server';
 import { ollama } from 'ollama-ai-provider';
 import { streamText } from 'ai';
@@ -12,7 +13,6 @@ export async function POST(req: Request) {
       messages,
     });
 
-    // Convert stream to ReadableStream
     const readableStream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();

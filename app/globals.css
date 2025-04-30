@@ -232,6 +232,80 @@
   background-color: rgba(50, 50, 50, 0.9);
 }
 
+/* Tambahkan di globals.css */
+.code-block-container {
+  transition: opacity 0.2s ease-out;
+}
+
+pre code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6A9955 !important;
+}
+
+.token.punctuation {
+  color: #d4d4d4 !important;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #b5cea8 !important;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #ce9178 !important;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #d4d4d4 !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #569cd6 !important;
+}
+
+.token.function {
+  color: #dcdcaa !important;
+}
+
+.token.class-name {
+  color: #4ec9b0 !important;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #d16969 !important;
+}
+
 /* Improved mobile responsiveness */
 @media (max-width: 768px) {
   .sidebar-trigger-visible {
