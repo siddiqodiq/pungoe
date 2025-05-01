@@ -9,6 +9,7 @@ import { ToolModal } from "@/components/tool-modal";
 import { Message } from "@/app/types";
 import { CodeBlock } from "@/components/code-block";
 import Prism from 'prismjs';
+import { Logo } from "@/components/ui/logo"
 
 interface ChatInterfaceProps {
   activeTool: string | null;
@@ -186,12 +187,12 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b border-gray-800 p-4 mobile-padding">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full gradient-bg hover-pulse">
-                <Cpu className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-lg font-bold gradient-text">PentestAI Assistant</h2>
-            </div>
+          <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full gradient-bg hover-pulse">
+            <Logo className="h-7 w-7 text-white" />
+          </div>
+          <h2 className="text-lg font-bold gradient-text">PentestAI Assistant</h2>
+        </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4 mobile-padding">
@@ -216,11 +217,11 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
                   } hover-effect`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`rounded-full p-2 ${message.role === "user" ? "gradient-bg" : "bg-gray-800"}`}>
+                  <div className={`rounded-full p-2 ${message.role === "user" ? "gradient-bg" : "bg-gray-800"}`}>
                       {message.role === "user" ? (
-                        <div className="h-4 w-4 rounded-full bg-white" />
+                        <div className="h-8 w-8 rounded-full bg-white" />
                       ) : (
-                        <Cpu className="h-4 w-4 text-gray-400" />
+                        <Logo className="h-7 w-7 text-gray-400" />
                       )}
                     </div>
                     <div className="flex-1">

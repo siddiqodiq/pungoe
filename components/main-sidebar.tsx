@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
+import { Logo } from "./ui/logo"
 
 // Sample chat history data
 const chatHistory = [
@@ -52,13 +53,13 @@ export function MainSidebar() {
   return (
     <Sidebar side="left" variant="sidebar" collapsible="offcanvas">
       <SidebarHeader className="p-3">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md gradient-bg hover-pulse">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
-          <div className="font-bold text-lg gradient-text">PentestAI</div>
+      <div className="flex items-center gap-2 px-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md gradient-bg hover-pulse">
+          <Logo className="h-9 w-9 text-white" />
         </div>
-      </SidebarHeader>
+        <div className="font-bold text-lg gradient-text">PentestAI</div>
+      </div>
+    </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>

@@ -6,6 +6,7 @@ import { Shield, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Logo } from "@/components/ui/logo"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -27,13 +28,11 @@ export default function RegisterPage() {
       <div className="absolute inset-0 grid-pattern opacity-20"></div>
       <div className="relative w-full max-w-md mx-auto">
         <Card className="w-full border-gray-800 bg-black/80 backdrop-blur-md">
-          <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full gradient-bg">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            <CardTitle className="text-2xl font-bold gradient-text">Create an account</CardTitle>
-            <CardDescription className="text-gray-400">Enter your information to create your account</CardDescription>
-          </CardHeader>
+        <CardHeader className="space-y-1 text-center">
+        <Logo className="mx-auto h-[80px] w-auto text-white" />
+      <CardTitle className="text-2xl font-bold gradient-text">Create an account</CardTitle>
+      <CardDescription className="text-gray-400">Enter your information to create your account</CardDescription>
+    </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

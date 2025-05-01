@@ -193,6 +193,7 @@
   opacity: 0;
 }
 
+
 /* Mobile responsiveness */
 @media (max-width: 640px) {
   .mobile-hidden {
