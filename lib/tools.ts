@@ -19,14 +19,14 @@ export const tools: Tool[] = [
     name: "Port Scanner",
     description: "Scan open ports on a target IP.",
     category: "recon",
-    status: "Under Development",
+    status: "Available",
   },
   {
     id: "3",
     name: "WAF Detector",
     description: "Detect if a website is behind a WAF.",
     category: "recon",
-    status: "Maintenance",
+    status: "Available",
   },
   {
     id: "4",

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Play, Save, Copy, Download, AlertTriangle } from "lucide-react"
+import { Loader2, Play, Save, Copy, Download, AlertTriangle, Check } from "lucide-react"
 import { tools } from "@/lib/tools"
 import { Badge } from "@/components/ui/badge"
 
@@ -17,9 +17,17 @@ interface ToolPanelProps {
 export function ToolPanel({ toolId }: ToolPanelProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   // Find the selected tool
   const selectedTool = tools.find((tool) => tool.id === toolId)
+
+  const handleCopy = () => {
+    if (!results) return
+    navigator.clipboard.writeText(results)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   if (!toolId || !selectedTool) {
     return (
@@ -30,6 +38,7 @@ export function ToolPanel({ toolId }: ToolPanelProps) {
       </div>
     )
   }
+
 
   const handleRunTool = () => {
     if (selectedTool.status !== "Available") {
@@ -201,10 +210,10 @@ export function ToolPanel({ toolId }: ToolPanelProps) {
                       {results}
                     </pre>
                     <div className="absolute top-2 right-2 flex gap-2">
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                        <Copy className="h-4 w-4" />
-                        <span className="sr-only">Copy</span>
-                      </Button>
+                    <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={handleCopy}>
+        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        <span className="sr-only">Copy</span>
+      </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0">
                         <Download className="h-4 w-4" />
                         <span className="sr-only">Download</span>
