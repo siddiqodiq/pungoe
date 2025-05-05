@@ -35,15 +35,23 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
   const { toast } = useToast()
 
   const selectedTool = tools.find((tool) => tool.id === toolId)
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
 
-  useEffect(() => {
-    // Reset state when tool changes
-    if (isOpen && toolId) {
+   // Sync internal state with props
+   useEffect(() => {
+    if (isOpen) {
+      setInternalIsOpen(true)
+      // Reset states when opening
       setResults(null)
       setError(null)
       setInputs({})
     }
-  }, [toolId, isOpen])
+  }, [isOpen])
+
+  const handleClose = () => {
+    setInternalIsOpen(false)
+    onClose()
+  }
 
   if (!isOpen || !selectedTool) {
     return null
@@ -147,7 +155,11 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
   }
 
   return (
-    <Modal open={isOpen} onClose={onClose} closeOnOutsideClick={false}>
+    <Modal 
+      open={internalIsOpen}
+      onClose={handleClose}
+      closeOnOutsideClick={true}
+    >
       <div className="flex flex-col max-h-[80vh] w-full">
         <div className="border-b border-gray-800 p-4 flex items-center justify-between">
           <div>

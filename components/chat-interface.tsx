@@ -25,19 +25,20 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const streamingRef = useRef(false)
   const { toast } = useToast()
+  const [prevActiveTool, setPrevActiveTool] = useState<string | null>(null)
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  // Handle active tool changes
-  useEffect(() => {
-    if (activeTool) {
+    if (activeTool !== prevActiveTool) {
       setSelectedTool(activeTool)
-      setIsToolModalOpen(true)
+      setIsToolModalOpen(!!activeTool)
+      setPrevActiveTool(activeTool)
     }
-  }, [activeTool])
+  }, [activeTool, prevActiveTool])
+
+  const handleCloseToolModal = () => {
+    setIsToolModalOpen(false)
+    setSelectedTool(null)
+  }
 
   // Process content and identify code blocks
   const processContent = useCallback((content: string) => {
@@ -281,9 +282,9 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       </div>
 
       <ToolModal 
-        toolId={selectedTool} 
-        isOpen={isToolModalOpen} 
-        onClose={() => setIsToolModalOpen(false)}
+        toolId={selectedTool}
+        isOpen={isToolModalOpen}
+        onClose={handleCloseToolModal}
         onSendToChat={handleSendToolResults}
       />
     </div>
