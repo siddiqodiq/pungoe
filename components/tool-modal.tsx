@@ -58,8 +58,11 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
   }
 
   const handleInputChange = (id: string, value: string) => {
-    setInputs(prev => ({ ...prev, [id]: value }))
-  }
+    setInputs(prev => ({ 
+      ...prev, 
+      [id]: value.trim() 
+    }));
+  };
 
   const handleCopyResults = () => {
     if (!results) return
@@ -76,70 +79,155 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
     }, 2000)
   }
 
+  // components/tool-modal.tsx
   const handleRunTool = async () => {
-    if (selectedTool.status !== "Available") return
-
-    setIsLoading(true)
-    setError(null)
-    
+    if (!selectedTool) return;
+  
+    setIsLoading(true);
+    setError(null);
+    setResults(null);
+  
     try {
-      const response = await runTool(selectedTool.name, inputs)
-      
-      let formattedResults = response.output
-      
-      if (selectedTool.name === "Subdomain Finder") {
-        formattedResults = formatSubdomainResults(response.output)
-      } else if (selectedTool.name === "WAF Detector") {
-        formattedResults = formatWafResults(response.output)
+      // Pastikan input yang diperlukan ada
+      if (selectedTool.name === "WAF Detector" && !inputs.target) {
+        throw new Error("Please enter a target website");
       }
+  
+      // Siapkan payload berdasarkan tool
+      let payload = {};
+      switch (selectedTool.name) {
+        case "WAF Detector":
+          payload = { 
+            // Kirim kedua kemungkinan parameter untuk kompatibilitas
+            url: inputs.target,
+            domain: inputs.target?.replace(/^https?:\/\//i, "") 
+          };
+          break;
+        case "Subdomain Finder":
+          payload = { domain: inputs.domain };
+          break;
+        default:
+          payload = inputs;
+      }
+  
+      // Eksekusi tool
+      const response = await runTool(selectedTool.name, payload);
       
-      setResults(formattedResults)
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to run tool"
-      setError(errorMessage)
+      // Format hasil
+      const formattedResults = selectedTool.name === "WAF Detector" 
+        ? formatWafResults(response.output) 
+        : formatSubdomainResults(response.output);
+      
+      setResults(formattedResults);
+  
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      setError(errorMessage);
       toast({
-        title: "Error running tool",
+        title: "Error",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const formatSubdomainResults = (rawOutput: string) => {
     const subdomains = rawOutput.split('\n').filter(s => s.trim())
     return `SUBDOMAIN FINDER RESULTS\n\n${subdomains.map(s => `• ${s}`).join('\n')}\n\nFound ${subdomains.length} subdomains`
   }
 
-  const formatWafResults = (rawOutput: string) => {
-    const wafDetected = rawOutput.includes("is behind a WAF")
-    const wafNameMatch = rawOutput.match(/WAF: (.+)/)
-    const wafName = wafNameMatch ? wafNameMatch[1] : "Unknown"
-    
-    return `WAF DETECTION RESULTS\n\n• Target: ${inputs.domain || ''}\n• WAF Detected: ${wafDetected ? "Yes" : "No"}\n• WAF Name: ${wafName}`
-  }
+  
 
   const getToolInputs = () => {
-    switch (selectedTool.name) {
-      case "Subdomain Finder":
-        return [
-          { id: "domain", label: "Domain", type: "text", placeholder: "example.com" },
-          { id: "depth", label: "Search Depth", type: "text", placeholder: "Standard" },
-        ]
-      case "Port Scanner":
-        return [
-          { id: "target", label: "Target IP/Domain", type: "text", placeholder: "example.com or 192.168.1.1" },
-          { id: "port-range", label: "Port Range", type: "text", placeholder: "1-1000" },
-        ]
+    switch (selectedTool?.name) {
       case "WAF Detector":
-        return [{ id: "domain", label: "Target URL", type: "text", placeholder: "https://example.com" }]
-      case "Whois Lookup":
-        return [{ id: "domain", label: "Domain", type: "text", placeholder: "example.com" }]
+        return [{
+          id: "target",
+          label: "Target Website",
+          type: "text",
+          placeholder: "example.com atau https://example.com",
+          required: true
+        }];
+      case "Subdomain Finder":
+        return [{
+          id: "domain",
+          label: "Domain",
+          type: "text",
+          placeholder: "example.com",
+          required: true
+        }];
       default:
-        return [{ id: "target", label: "Target", type: "text", placeholder: "Enter target information" }]
+        return [];
     }
+  };
+
+  const stripAnsi = (str: string) => str.replace(/\x1B\[[0-9;]*m/g, '');
+
+const formatWafResults = (rawOutput: string, target: string) => {
+  try {
+    const lines = rawOutput
+      .split('\n')
+      .map(line => stripAnsi(line.trim()))
+      .filter(line =>
+        line.startsWith('[*]') ||
+        line.startsWith('[+]') ||
+        line.startsWith('[-]') ||
+        line.startsWith('[~]')
+      );
+
+    let isProtected = false;
+    let wafName = 'Unknown';
+    let protectedExplanation = '';
+    let reason = '';
+    let requests = '';
+
+    for (const line of lines) {
+      if (line.includes('is behind')) {
+        isProtected = true;
+        const wafMatch = line.match(/behind (.+?) WAF/i);
+        if (wafMatch) wafName = wafMatch[1];
+        protectedExplanation = 'Confirmed by signature match';
+      }
+
+      if (line.includes('No WAF detected')) {
+        isProtected = false;
+        protectedExplanation = 'No WAF detected by the generic detection';
+      }
+
+      if (line.includes('seems to be behind')) {
+        isProtected = false;
+        protectedExplanation = 'Seemingly behind a WAF or some sort of security solution';
+      }
+
+      if (line.startsWith('[~] Reason:')) {
+        reason = line.replace('[~] Reason: ', '');
+      }
+
+      if (line.includes('Number of requests:')) {
+        requests = line.replace('[~] Number of requests: ', '');
+      }
+    }
+
+    const result = `WAF DETECTION RESULTS
+Protected: ${isProtected ? '✅ Yes' : `❌ No (${protectedExplanation})`}
+WAF Name: ${isProtected ? wafName : 'Unknown'}
+Requests Made: ${requests || 'N/A'}`;
+
+    return reason && protectedExplanation.includes('Seemingly behind')
+      ? `${result}\nReason: ${reason}`
+      : result;
+  } catch (err) {
+    console.error('Format error:', err);
+    return 'Could not format results';
   }
+};
+
+  
+  
+  
+  
 
   const getStatusColor = (status: string) => {
     switch (status) {
