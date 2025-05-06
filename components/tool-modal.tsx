@@ -33,6 +33,7 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
   const [inputs, setInputs] = useState<Record<string, string>>({})
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
+  const [rawOutput, setRawOutput] = useState<any>(null);
 
   const selectedTool = tools.find((tool) => tool.id === toolId)
   const [internalIsOpen, setInternalIsOpen] = useState(false)
@@ -79,52 +80,99 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
     }, 2000)
   }
 
+  
+
   // components/tool-modal.tsx
   const handleRunTool = async () => {
-    if (!selectedTool) return;
+    if (!selectedTool || selectedTool.status !== "Available") {
+      toast({
+        title: "Tool not available",
+        description: "This tool is currently under development or maintenance",
+        variant: "destructive",
+      });
+      return;
+    }
   
     setIsLoading(true);
     setError(null);
     setResults(null);
+    setRawOutput(null); // Reset raw output setiap run baru
   
     try {
-      // Pastikan input yang diperlukan ada
-      if (selectedTool.name === "WAF Detector" && !inputs.target) {
-        throw new Error("Please enter a target website");
+      // Validasi input berdasarkan tool
+      if (selectedTool.name === "Subdomain Finder" && !inputs.domain) {
+        throw new Error("Domain is required");
       }
   
-      // Siapkan payload berdasarkan tool
+      // Siapkan payload sesuai tool
       let payload = {};
+      let endpoint = "/api/tools/";
+  
       switch (selectedTool.name) {
-        case "WAF Detector":
-          payload = { 
-            // Kirim kedua kemungkinan parameter untuk kompatibilitas
-            url: inputs.target,
-            domain: inputs.target?.replace(/^https?:\/\//i, "") 
-          };
-          break;
         case "Subdomain Finder":
           payload = { domain: inputs.domain };
+          endpoint += "subdomain";
           break;
+  
+        case "WAF Detector":
+          if (!inputs.target) throw new Error("Target website is required");
+          payload = { 
+            domain: inputs.target.replace(/^https?:\/\//i, "").split('/')[0]
+          };
+          endpoint += "waf";
+          break;
+  
         default:
           payload = inputs;
       }
   
       // Eksekusi tool
-      const response = await runTool(selectedTool.name, payload);
-      
-      // Format hasil
-      const formattedResults = selectedTool.name === "WAF Detector" 
-        ? formatWafResults(response.output) 
-        : formatSubdomainResults(response.output);
-      
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `Request failed with status ${response.status}`
+        );
+      }
+  
+      const data = await response.json();
+  
+      // Simpan raw output untuk keperluan download
+      setRawOutput(data.rawOutput || data.output);
+  
+      // Format hasil untuk ditampilkan di UI
+      let formattedResults = "";
+      switch (selectedTool.name) {
+        case "Subdomain Finder":
+          formattedResults = formatSubdomainResults(data.output);
+          break;
+        case "WAF Detector":
+          formattedResults = formatWafResults(data.output);
+          break;
+        default:
+          formattedResults = JSON.stringify(data.output, null, 2);
+      }
+  
       setResults(formattedResults);
+      toast({
+        title: "Scan completed",
+        description: `${selectedTool.name} finished successfully`,
+      });
   
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error(`Error running ${selectedTool?.name}:`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       setError(errorMessage);
       toast({
-        title: "Error",
+        title: "Error running tool",
         description: errorMessage,
         variant: "destructive",
       });
@@ -138,6 +186,20 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
     return `SUBDOMAIN FINDER RESULTS\n\n${subdomains.map(s => `• ${s}`).join('\n')}\n\nFound ${subdomains.length} subdomains`
   }
 
+
+
+// Fungsi utilitas untuk download
+const downloadFile = (content: string, filename: string) => {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
   
 
   const getToolInputs = () => {
@@ -242,6 +304,35 @@ Requests Made: ${requests || 'N/A'}`;
     }
   }
 
+  const handleDownloadResults = () => {
+    if (!results) return;
+  
+    // Ekstrak hanya subdomain dari hasil (hilangkan log dan formatting)
+    const subdomains = results
+      .split('\n')
+      .filter(line => line.trim().startsWith('• '))
+      .map(line => line.replace('• ', '').trim());
+  
+    // Buat konten file
+    const fileContent = subdomains.join('\n');
+    
+    // Buat blob dan download
+    const blob = new Blob([fileContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `subdomains-${inputs.domain || 'results'}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  
+    toast({
+      title: "Download started",
+      description: "Subdomain results saved as TXT file",
+    });
+  };
+
   return (
     <Modal 
       open={internalIsOpen}
@@ -334,41 +425,48 @@ Requests Made: ${requests || 'N/A'}`;
               </Card>
 
               {results && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Results</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="relative">
-                      <pre className="bg-black p-4 rounded-md font-mono text-sm overflow-x-auto whitespace-pre-wrap">
-                        {results}
-                      </pre>
-                      <div className="absolute top-2 right-2 flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={handleCopyResults}
-                        >
-                          {copied ? (
-                            <Check className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                        {onSendToChat && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => onSendToChat(results)}
-                          >
-                            <Send className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+  <Card>
+    <CardHeader>
+      <CardTitle>Results</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="relative">
+        <pre className="bg-black p-4 rounded-md font-mono text-sm overflow-x-auto whitespace-pre-wrap">
+          {results}
+        </pre>
+        <div className="absolute top-2 right-2 flex gap-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleCopyResults}
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleDownloadResults}
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          {onSendToChat && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => onSendToChat(results)}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)}
             </TabsContent>
 
             <TabsContent value="help" className="mt-4">
