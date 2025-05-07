@@ -26,18 +26,17 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const streamingRef = useRef(false)
   const { toast } = useToast()
   const [prevActiveTool, setPrevActiveTool] = useState<string | null>(null)
+  
 
   useEffect(() => {
-    if (activeTool !== prevActiveTool) {
-      setSelectedTool(activeTool)
-      setIsToolModalOpen(!!activeTool)
-      setPrevActiveTool(activeTool)
+    // Open modal when activeTool changes to a non-null value
+    if (activeTool) {
+      setIsToolModalOpen(true)
     }
-  }, [activeTool, prevActiveTool])
+  }, [activeTool])
 
   const handleCloseToolModal = () => {
     setIsToolModalOpen(false)
-    setSelectedTool(null)
   }
 
   // Process content and identify code blocks
@@ -282,7 +281,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       </div>
 
       <ToolModal 
-        toolId={selectedTool}
+        toolId={activeTool} // Use activeTool directly instead of selectedTool
         isOpen={isToolModalOpen}
         onClose={handleCloseToolModal}
         onSendToChat={handleSendToolResults}

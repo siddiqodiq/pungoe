@@ -13,6 +13,16 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false)
 
+  const handleToolSelect = (toolId: string) => {
+    // If selecting the same tool that's already active, just ensure it opens
+    if (toolId === activeTool) {
+      setActiveTool(null) // First reset to null
+      setTimeout(() => setActiveTool(toolId), 10) // Then set it back
+    } else {
+      setActiveTool(toolId)
+    }
+  }
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#212121]">
       <MainSidebar />
@@ -46,7 +56,10 @@ export default function Home() {
           <ChatInterface activeTool={activeTool} />
         </div>
       </SidebarInset>
-      <ToolsSidebar onSelectTool={setActiveTool} activeTool={activeTool} />
+      <ToolsSidebar 
+        onSelectTool={handleToolSelect} 
+        activeTool={activeTool} 
+      />
     </div>
   )
 }

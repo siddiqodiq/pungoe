@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { tools } from "@/lib/tools"
-import { useToast } from "@/components/ui/use-toast"
 import { BaseToolModal } from "@/components/tools/base-tool-modal"
 import { SubdomainModal } from "@/components/tools/subdomain-modal"
 import { WafModal } from "@/components/tools/waf-modal"
@@ -15,20 +14,38 @@ interface ToolModalProps {
 }
 
 export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
   const selectedTool = tools.find((tool) => tool.id === toolId)
 
-  if (!isOpen || !selectedTool) {
+  // Sync internal state with props
+  useEffect(() => {
+    if (isOpen) {
+      setInternalIsOpen(true)
+    } else {
+      // Add delay to allow animations to complete
+      const timer = setTimeout(() => {
+        setInternalIsOpen(false)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen])
+
+  const handleClose = () => {
+    setInternalIsOpen(false)
+    onClose()
+  }
+
+  if (!internalIsOpen || !selectedTool) {
     return null
   }
 
-  // Render modal spesifik berdasarkan tool
   switch (selectedTool.name) {
     case "Subdomain Finder":
       return (
         <SubdomainModal 
           tool={selectedTool}
-          isOpen={isOpen}
-          onClose={onClose}
+          isOpen={internalIsOpen}
+          onClose={handleClose}
           onSendToChat={onSendToChat}
         />
       )
@@ -36,14 +53,14 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
       return (
         <WafModal 
           tool={selectedTool}
-          isOpen={isOpen}
-          onClose={onClose}
+          isOpen={internalIsOpen}
+          onClose={handleClose}
           onSendToChat={onSendToChat}
         />
       )
     default:
       return (
-        <BaseToolModal tool={selectedTool} isOpen={isOpen} onClose={onClose}>
+        <BaseToolModal tool={selectedTool} isOpen={internalIsOpen} onClose={handleClose}>
           <div className="p-4">
             <p>This tool is not yet implemented</p>
           </div>
