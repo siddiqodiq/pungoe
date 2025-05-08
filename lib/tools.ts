@@ -30,8 +30,15 @@ export const tools: Tool[] = [
   },
   {
     id: "11",
-    name: "URL Crawler",
-    description: "Crawl a website to find all links.",
+    name: "URL Crawler [FUZZ]",
+    description: "Crawl a website to find all links with fuzzing format.",
+    category: "recon",
+    status: "Available",
+  },
+  {
+    id: "12",
+    name: "Deep URL Crawler",
+    description: "Crawl a website using katana to find all juicy endpoints.",
     category: "recon",
     status: "Available",
   },

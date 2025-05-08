@@ -36,6 +36,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
+
+interface UrlCrawlerModalProps {
+    tool: Tool;
+    isOpen: boolean;
+    onClose: () => void;
+    onSendToChat?: (content: string) => void;
+  }
+
 export function UrlCrawlerModal({ tool, isOpen, onClose, onSendToChat }: UrlCrawlerModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [results, setResults] = useState<string[]>([]);
@@ -241,7 +249,6 @@ export function UrlCrawlerModal({ tool, isOpen, onClose, onSendToChat }: UrlCraw
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="w-full"
             >
               <Upload className="h-4 w-4 mr-2" />
               {file ? file.name : "Upload File"}

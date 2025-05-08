@@ -26,7 +26,8 @@ import {
   Server,
   Code,
   Map,
-  Pickaxe
+  Pickaxe,
+  Sword
 } from "lucide-react"
 import { tools, getCategoryLabel } from "@/lib/tools"
 
@@ -54,7 +55,8 @@ export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
       "Subdomain Finder": Globe,
       "WAF Detector": Shield,
       "Port Scanner": Scan,
-      "URL Crawler": Pickaxe,
+      "URL Crawler [FUZZ]": Pickaxe,
+      "Deep URL Crawler": Sword,
       "Whois Lookup": Search,
       "URL Fuzzer": FileSearch,
       Nuclei: AlertTriangle,
