@@ -29,6 +29,13 @@ export const tools: Tool[] = [
     status: "Available",
   },
   {
+    id: "11",
+    name: "URL Crawler",
+    description: "Crawl a website to find all links.",
+    category: "recon",
+    status: "Available",
+  },
+  {
     id: "4",
     name: "Whois Lookup",
     description: "Perform a WHOIS lookup for a domain.",
@@ -77,6 +84,7 @@ export const tools: Tool[] = [
     category: "utils",
     status: "Under Development",
   },
+
 ]
 
 export const getCategoryLabel = (category: string): string => {

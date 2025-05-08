@@ -5,6 +5,7 @@ import { tools } from "@/lib/tools"
 import { BaseToolModal } from "@/components/tools/base-tool-modal"
 import { SubdomainModal } from "@/components/tools/subdomain-modal"
 import { WafModal } from "@/components/tools/waf-modal"
+import { UrlCrawlerModal } from "./tools/url-crawler-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -52,6 +53,15 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
     case "WAF Detector":
       return (
         <WafModal 
+          tool={selectedTool}
+          isOpen={internalIsOpen}
+          onClose={handleClose}
+          onSendToChat={onSendToChat}
+        />
+      )
+      case "URL Crawler": // Add this case
+      return (
+        <UrlCrawlerModal
           tool={selectedTool}
           isOpen={internalIsOpen}
           onClose={handleClose}

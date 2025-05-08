@@ -26,6 +26,7 @@ import {
   Server,
   Code,
   Map,
+  Pickaxe
 } from "lucide-react"
 import { tools, getCategoryLabel } from "@/lib/tools"
 
@@ -51,8 +52,9 @@ export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
   const getToolIcon = (toolName: string) => {
     const iconMap: Record<string, any> = {
       "Subdomain Finder": Globe,
-      "Port Scanner": Scan,
       "WAF Detector": Shield,
+      "Port Scanner": Scan,
+      "URL Crawler": Pickaxe,
       "Whois Lookup": Search,
       "URL Fuzzer": FileSearch,
       Nuclei: AlertTriangle,
