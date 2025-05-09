@@ -28,7 +28,6 @@ export function validateDomain(domain: string) {
     }
   }
 
-  // app/api/tools/utils/validators.ts
 // app/api/tools/utils/validators.ts
 export function validateTargetUrl(input: string) {
   if (!input || typeof input !== 'string') {

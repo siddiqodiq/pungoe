@@ -73,11 +73,11 @@ export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Available":
-        return "text-gray-300"
+        return "text-green-500"
       case "Under Development":
-        return "text-yellow-500"
-      case "Maintenance":
         return "text-red-500"
+      case "Maintenance":
+        return "text-yellow-500"
       default:
         return "text-gray-500"
     }

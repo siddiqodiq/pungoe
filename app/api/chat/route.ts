@@ -5,7 +5,15 @@ import { streamText } from 'ai';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
-  const model = ollama(process.env.OLLAMA_MODEL || 'llama3');
+  const model = ollama(process.env.OLLAMA_MODEL || 'pentest-ai');
+
+  // Add system message if not present
+  if (messages[0]?.role !== 'system') {
+    messages.unshift({
+      role: 'system',
+      content: 'You are a pentesting assistant. Analyze security tool results and provide actionable insights.'
+    });
+  }
 
   try {
     const { textStream } = await streamText({

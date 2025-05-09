@@ -21,6 +21,7 @@ export function WafModal({ tool, isOpen, onClose, onSendToChat }: WafModalProps)
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState("");
   const [copied, setCopied] = useState(false);
+  const [rawOutput, setRawOutput] = useState("");
 
   const handleRunTool = async () => {
     if (!target) {
@@ -181,15 +182,18 @@ export function WafModal({ tool, isOpen, onClose, onSendToChat }: WafModalProps)
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
-                  {onSendToChat && (
+                  {onSendToChat && results && (
                     <Button 
                       size="sm" 
                       variant="outline" 
                       onClick={() => onSendToChat(results)}
+                      aria-label="Send to chat"
+                      disabled={isLoading}
                     >
                       <Send className="h-4 w-4" />
                     </Button>
                   )}
+
                 </div>
               </div>
             </CardContent>

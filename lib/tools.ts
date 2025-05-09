@@ -19,7 +19,7 @@ export const tools: Tool[] = [
     name: "Port Scanner",
     description: "Scan open ports on a target IP.",
     category: "recon",
-    status: "Available",
+    status: "Under Development",
   },
   {
     id: "3",

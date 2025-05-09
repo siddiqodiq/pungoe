@@ -184,13 +184,89 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     }
   }
 
-  const handleSendToolResults = (content: string) => {
-    setInput(content)
-    setIsToolModalOpen(false)
-    setTimeout(() => {
-      document.querySelector('textarea')?.focus()
-    }, 100)
-  }
+  const handleSendToolResults = async (content: string) => {
+    setIsToolModalOpen(false);
+    
+    // Create a new user message with the tool results
+    const toolMessage: Message = {
+      role: "user",
+      content: `Here are the results from the tool, please analyze what is the next step to do for exploit or attack the target:\n\n${content}`,
+      id: `tool-${Date.now()}`
+    };
+  
+    // Add the tool message to chat
+    setMessages(prev => [...prev, toolMessage]);
+    
+    // Process the tool results through the LLM
+    setIsLoading(true);
+    streamingRef.current = true;
+  
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          messages: [
+            ...messages,
+            {
+              role: "system",
+              content: "You are a pentesting assistant. Analyze these tool results and provide insights."
+            },
+            toolMessage
+          ] 
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No reader available");
+  
+      let fullContent = "";
+      const assistantMessageId = `assistant-${Date.now()}`;
+      
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: "", 
+        id: assistantMessageId 
+      }]);
+  
+      const decoder = new TextDecoder();
+      
+      while (streamingRef.current) {
+        const { done, value } = await reader.read();
+        if (done) break;
+  
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: fullContent } 
+            : msg
+        ));
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "Sorry, I encountered an error processing the tool results.",
+        id: `error-${Date.now()}`
+      }]);
+      toast({
+        title: "Error",
+        description: "Failed to process tool results",
+        variant: "destructive",
+      });
+    } finally {
+      streamingRef.current = false;
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
