@@ -10,14 +10,11 @@ import { Button } from "@/components/ui/button"
 
 export default function Home() {
   const [activeTool, setActiveTool] = useState<string | null>(null)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false)
 
   const handleToolSelect = (toolId: string) => {
-    // If selecting the same tool that's already active, just ensure it opens
     if (toolId === activeTool) {
-      setActiveTool(null) // First reset to null
-      setTimeout(() => setActiveTool(toolId), 10) // Then set it back
+      setActiveTool(null)
+      setTimeout(() => setActiveTool(toolId), 10)
     } else {
       setActiveTool(toolId)
     }
@@ -34,7 +31,7 @@ export default function Home() {
               variant="outline"
               size="icon"
               className="h-10 w-10 rounded-full bg-gray-800/80 backdrop-blur-sm border-gray-700 hover:bg-gray-700"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => document.dispatchEvent(new CustomEvent('toggle-left-sidebar'))}
             >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
@@ -46,7 +43,7 @@ export default function Home() {
               variant="outline"
               size="icon"
               className="h-10 w-10 rounded-full bg-gray-800/80 backdrop-blur-sm border-gray-700 hover:bg-gray-700"
-              onClick={() => setMobileToolsOpen(!mobileToolsOpen)}
+              onClick={() => document.dispatchEvent(new CustomEvent('toggle-right-sidebar'))}
             >
               <Wrench className="h-5 w-5" />
               <span className="sr-only">Toggle Tools</span>

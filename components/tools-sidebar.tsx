@@ -30,6 +30,7 @@ import {
   Sword
 } from "lucide-react"
 import { tools, getCategoryLabel } from "@/lib/tools"
+import { useEffect } from "react"
 
 interface ToolsSidebarProps {
   onSelectTool: (tool: string) => void
@@ -37,6 +38,24 @@ interface ToolsSidebarProps {
 }
 
 export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
+  useEffect(() => {
+    const handleToggle = () => {
+      document.dispatchEvent(new CustomEvent('toggle-right-sidebar'))
+    }
+    
+    // Add event listener for keyboard shortcut
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 't' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        handleToggle()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+
   // Group tools by category
   const toolsByCategory = tools.reduce(
     (acc, tool) => {

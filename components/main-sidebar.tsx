@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Shield, Database, Settings, LogOut, User, Bell, Moon, HelpCircle } from "lucide-react"
 import {
   Sidebar,
@@ -39,6 +39,23 @@ const chatHistory = [
 
 export function MainSidebar() {
   const [activeItem, setActiveItem] = useState("dashboard")
+
+  useEffect(() => {
+    const handleToggle = () => {
+      document.dispatchEvent(new CustomEvent('toggle-left-sidebar'))
+    }
+    
+    // Add event listener for keyboard shortcut
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        handleToggle()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Shield },

@@ -317,3 +317,40 @@ pre code {
     padding-top: 4rem !important;
   }
 }
+
+/* Mobile sidebar styles */
+@media (max-width: 768px) {
+  .sidebar-mobile {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 80%;
+    max-width: 300px;
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .sidebar-mobile-left {
+    left: 0;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-mobile-right {
+    right: 0;
+    transform: translateX(100%);
+  }
+  
+  .sidebar-mobile-open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
