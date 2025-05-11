@@ -8,6 +8,13 @@ export interface Tool {
 
 export const tools: Tool[] = [
   {
+    id: "4",
+    name: "Whois Lookup",
+    description: "Perform a WHOIS lookup for a domain.",
+    category: "recon",
+    status: "Available",
+  },
+  {
     id: "1",
     name: "Subdomain Finder",
     description: "Find subdomains of a target domain.",
@@ -16,10 +23,10 @@ export const tools: Tool[] = [
   },
   {
     id: "2",
-    name: "Port Scanner",
+    name: "Nmap Scanner",
     description: "Scan open ports on a target IP.",
     category: "recon",
-    status: "Under Development",
+    status: "Available",
   },
   {
     id: "3",
@@ -42,13 +49,7 @@ export const tools: Tool[] = [
     category: "recon",
     status: "Available",
   },
-  {
-    id: "4",
-    name: "Whois Lookup",
-    description: "Perform a WHOIS lookup for a domain.",
-    category: "recon",
-    status: "Under Development",
-  },
+ 
   {
     id: "5",
     name: "URL Fuzzer",
@@ -91,6 +92,13 @@ export const tools: Tool[] = [
     category: "utils",
     status: "Under Development",
   },
+  {
+    id: "15",
+    name: "Wayback Machine Dorking",
+    description: "Use the Wayback Machine to find historical data.",
+    category: "recon",
+    status: "Available",
+  }
 
 ]
 

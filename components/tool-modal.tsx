@@ -7,6 +7,9 @@ import { SubdomainModal } from "@/components/tools/subdomain-modal"
 import { WafModal } from "@/components/tools/waf-modal"
 import { UrlCrawlerModal } from "./tools/url-crawler-modal"
 import { DeepCrawlerModal } from "./tools/deep-crawler-modal"
+import { WaybackDorkingModal } from "./tools/wayback-dorking-modal"
+import { WhoisLookupModal } from "./tools/whois-lookup-modal"
+import { NmapScanModal } from "./tools/nmap-scan-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -78,6 +81,33 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
           onSendToChat={onSendToChat}
         />
       )
+      case "Wayback Machine Dorking":
+    return (
+    <WaybackDorkingModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />
+    )
+    case "Whois Lookup":
+  return (
+    <WhoisLookupModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />
+  )
+  case "Nmap Scanner":
+  return (
+    <NmapScanModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />
+  )
     default:
       return (
         <BaseToolModal tool={selectedTool} isOpen={internalIsOpen} onClose={handleClose}>

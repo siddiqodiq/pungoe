@@ -27,7 +27,8 @@ import {
   Code,
   Map,
   Pickaxe,
-  Sword
+  Sword,
+  FolderClock
 } from "lucide-react"
 import { tools, getCategoryLabel } from "@/lib/tools"
 import { useEffect } from "react"
@@ -71,12 +72,14 @@ export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
   // Map tool names to icons
   const getToolIcon = (toolName: string) => {
     const iconMap: Record<string, any> = {
+      "Whois Lookup": Search,
       "Subdomain Finder": Globe,
       "WAF Detector": Shield,
       "Port Scanner": Scan,
       "URL Crawler [FUZZ]": Pickaxe,
       "Deep URL Crawler": Sword,
-      "Whois Lookup": Search,
+      "Wayback Machine Dorking": FolderClock,
+      
       "URL Fuzzer": FileSearch,
       Nuclei: AlertTriangle,
       Nikto: Server,
