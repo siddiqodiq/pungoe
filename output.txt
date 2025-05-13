@@ -1,208 +1,675 @@
-📁 app/api/tools/subdomain/
-    📄 app/api/tools/subdomain/route.ts:
-        // app/api/tools/subdomain/route.ts
-        import { NextResponse } from 'next/server';
-        
-        export async function POST(req: Request) {
-          try {
-            const { domain } = await req.json();
-            
-            // Validasi input minimal
-            if (!domain || typeof domain !== 'string') {
-              return NextResponse.json(
-                { error: 'Valid domain is required' },
-                { status: 400 }
-              );
-            }
-        
-            // Panggil backend Flask
-            const flaskResponse = await fetch('http://localhost:5000/api/scan', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ domain }), // Hanya kirim domain saja
-            });
-        
-            if (!flaskResponse.ok) {
-              const error = await flaskResponse.text();
-              return NextResponse.json(
-                { error: error || 'Failed to scan domain' },
-                { status: flaskResponse.status }
-              );
-            }
-        
-            const result = await flaskResponse.json();
-            
-            // Pastikan response memiliki format yang diharapkan
-            if (!result || typeof result !== 'object') {
-              throw new Error('Invalid response format from backend');
-            }
-        
-            return NextResponse.json({
-              success: true,
-              output: result.output || result // Handle kedua kemungkinan struktur response
-            });
-        
-          } catch (error) {
-            console.error('Subdomain scan error:', error);
-            return NextResponse.json(
-              { error: error instanceof Error ? error.message : 'Internal server error' },
-              { status: 500 }
-            );
-          }
-        }    📄 app/api/tools/subdomain/scanner.ts:
-        // app/api/tools/subdomain/scanner.ts
-        interface ScanOptions {
-            bruteForce?: boolean;
-            depth?: 'quick' | 'normal' | 'deep';
-          }
-          
-          export async function scanSubdomains(domain: string, options: ScanOptions = {}) {
-            // Implementasi khusus subdomain scanning
-            const flaskResponse = await fetch('http://localhost:5000/api/scan', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ domain, ...options })
-            });
-          
-            if (!flaskResponse.ok) {
-              throw new Error(await flaskResponse.text());
-            }
-          
-            return await flaskResponse.json();
-          }📁 app/api/tools/utils/
-    📄 app/api/tools/utils/validators.ts:
-        // app/api/tools/utils/validators.ts
-        export function validateDomain(domain: string) {
-            if (!domain) {
-              return { valid: false, message: 'Domain is required' };
-            }
-            
-            // Regex sederhana untuk validasi domain
-            const domainRegex = /^(?!-)[A-Za-z0-9-]+([\-\.]{1}[a-z0-9]+)*\.[A-Za-z]{2,6}$/;
-            if (!domainRegex.test(domain)) {
-              return { valid: false, message: 'Invalid domain format' };
-            }
-            
-            return { valid: true };
-          }
-          
-          export function validateTarget(target: string) {
-            // Validasi URL atau IP address
-            try {
-              new URL(target);
-              return { valid: true };
-            } catch {
-              // Jika bukan URL, coba validasi sebagai IP
-              const ipRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-              if (ipRegex.test(target)) {
-                return { valid: true };
-              }
-              return { valid: false, message: 'Target must be a valid URL or IP address' };
-            }
-          }
-        
-          // app/api/tools/utils/validators.ts
-        // app/api/tools/utils/validators.ts
-        export function validateTargetUrl(input: string) {
-          if (!input || typeof input !== 'string') {
-            return { valid: false, message: 'Input is required' };
-          }
-          
-          // Bersihkan input
-          const cleanedInput = input.trim().replace(/^https?:\/\//i, '');
-        
-          // Validasi dasar
-          if (cleanedInput.length < 3) {
-            return { valid: false, message: 'Input too short' };
-          }
-        
-          // Cek mengandung karakter valid
-          if (!/^[a-z0-9\-\.]+\.[a-z]{2,}$/i.test(cleanedInput)) {
-            return { valid: false, message: 'Invalid domain format' };
-          }
-        
-          return { valid: true };
-        }📁 app/api/tools/waf/
-    📄 app/api/tools/waf/detector.ts:
-        // app/api/tools/waf/detector.ts
-        interface WAFDetectionResult {
-            isProtected: boolean;
-            wafName?: string;
-            detectedBy?: string[];
-          }
-          
-          export async function detectWAF(url: string): Promise<WAFDetectionResult> {
-            try {
-              // Panggil backend Flask untuk WAF detection
-              const flaskResponse = await fetch('http://localhost:5000/api/waf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-              });
-          
-              if (!flaskResponse.ok) {
-                throw new Error(await flaskResponse.text());
-              }
-          
-              const data = await flaskResponse.json();
-              
-              // Normalisasi response dari backend
-              return {
-                isProtected: data.protected || false,
-                wafName: data.waf_name || 'Unknown',
-                detectedBy: data.detected_by || []
-              };
-              
-            } catch (error) {
-              console.error('WAF detection failed:', error);
-              throw new Error(`WAF detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            }
-          }    📄 app/api/tools/waf/route.ts:
-        // app/api/tools/waf/route.ts
-        import { NextResponse } from 'next/server';
-        import { detectWAF } from './detector';
-        import { validateTargetUrl } from '../utils/validators';
-        
-        // app/api/tools/waf/route.ts
-        // app/api/tools/waf/route.ts
-        export async function POST(req: Request) {
-          try {
-            const { domain, url } = await req.json();
-            
-            // Normalisasi input (utamakan domain, fallback ke url)
-            const targetDomain = domain || 
-                               (url ? url.replace(/^https?:\/\//i, '').split('/')[0] : null);
-        
-            if (!targetDomain) {
-              return NextResponse.json(
-                { error: "Domain is required (provide either 'domain' or 'url' parameter)" },
-                { status: 400 }
-              );
-            }
-        
-            // Panggil backend Flask dengan format yang DIA HARUSKAN
-            const flaskResponse = await fetch('http://localhost:5000/api/waf', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ domain: targetDomain }) // Pastikan format ini sesuai Flask
-            });
-        
-            if (!flaskResponse.ok) {
-              const error = await flaskResponse.text();
-              console.error('Flask error:', error);
-              throw new Error(error);
-            }
-        
-            const result = await flaskResponse.json();
-            return NextResponse.json(result);
-        
-          } catch (error) {
-            console.error('WAF detection failed:', error);
-            return NextResponse.json(
-              { error: error instanceof Error ? error.message : 'WAF detection failed' },
-              { status: 500 }
-            );
-          }
-        }
+bantu saya membuat page baru akan saya berikan uinya:
+Volume serial number is FC9D-2B7E
+E:.
+    accordion.tsx
+    alert-dialog.tsx
+    alert.tsx
+    aspect-ratio.tsx
+    avatar.tsx
+    badge.tsx
+    breadcrumb.tsx
+    button.tsx
+    calendar.tsx
+    canvas-reveal-effect.tsx
+    card.tsx
+    carousel.tsx
+    chart.tsx
+    checkbox.tsx
+    collapsible.tsx
+    command.tsx
+    context-menu.tsx
+    dialog.tsx
+    drawer.tsx
+    dropdown-menu.tsx
+    form.tsx
+    hover-card.tsx
+    input-otp.tsx
+    input.tsx
+    label.tsx
+    logo.tsx
+    logoglitch.tsx
+    menubar.tsx
+    modal.tsx
+    navigation-menu.tsx
+    pagination.tsx
+    popover.tsx
+    progress.tsx
+    radio-group.tsx
+    resizable.tsx
+    scroll-area.tsx
+    select.tsx
+    separator.tsx
+    sheet.tsx
+    sidebar.tsx
+    skeleton.tsx
+    slider.tsx
+    sonner.tsx
+    switch.tsx
+    table.tsx
+    tabs.tsx
+    textarea.tsx
+    toast.tsx
+    toaster.tsx
+    toggle-group.tsx
+    toggle.tsx
+    tooltip.tsx
+    use-mobile.tsx
+    use-toast.ts
+
+kalau import pake ini:
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent }
+export {
+  AlertDialog,
+  AlertDialogPortal,
+  AlertDialogOverlay,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+}
+export { Alert, AlertTitle, AlertDescription }
+export { AspectRatio }
+export { Avatar, AvatarImage, AvatarFallback }
+export { Badge, badgeVariants }
+export {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbEllipsis,
+}
+export { Button, buttonVariants }
+export { Calendar }
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export {
+  type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+}
+export {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+}
+export { Checkbox }
+export { Collapsible, CollapsibleTrigger, CollapsibleContent }
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+  CommandSeparator,
+}
+export {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuGroup,
+  ContextMenuPortal,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuRadioGroup,
+}
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+}
+export {
+  Drawer,
+  DrawerPortal,
+  DrawerOverlay,
+  DrawerTrigger,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerFooter,
+  DrawerTitle,
+  DrawerDescription,
+}
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+}
+export {
+  useFormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+}
+export { HoverCard, HoverCardTrigger, HoverCardContent }
+export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator }
+export { Input }
+export { Label }
+export {
+  Menubar,
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarLabel,
+  MenubarCheckboxItem,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarPortal,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarGroup,
+  MenubarSub,
+  MenubarShortcut,
+}
+export {
+  navigationMenuTriggerStyle,
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuContent,
+  NavigationMenuTrigger,
+  NavigationMenuLink,
+  NavigationMenuIndicator,
+  NavigationMenuViewport,
+}
+export {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+}
+export { Popover, PopoverTrigger, PopoverContent }
+export { Progress }
+export { RadioGroup, RadioGroupItem }
+export { ResizablePanelGroup, ResizablePanel, ResizableHandle }
+export { ScrollArea, ScrollBar }
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+}
+export { Separator }
+export {
+  Sheet,
+  SheetPortal,
+  SheetOverlay,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+}
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+}
+export { Skeleton }
+export { Slider }
+export { Toaster }
+export { Switch }
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+}
+export { Tabs, TabsList, TabsTrigger, TabsContent }
+export { Textarea }
+export {
+  type ToastProps,
+  type ToastActionElement,
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastAction,
+}
+export { ToggleGroup, ToggleGroupItem }
+export { Toggle, toggleVariants }
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+
+
+ini global cssnya:
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 13%;
+    --foreground: 210 40% 98%;
+
+    --card: 0 0% 15%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 0 0% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 0 0% 15%;
+
+    --secondary: 0 0% 70%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 0 0% 25%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 0 0% 25%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 70%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar variables */
+    --sidebar-background: 0 0% 15%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 0 0% 15%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+  }
+}
+
+.gradient-text {
+  @apply text-transparent bg-clip-text;
+  background-image: linear-gradient(to right, #a0a0a0, #c0c0c0, #808080);
+}
+
+.gradient-bg {
+  background-image: linear-gradient(135deg, #808080, #a0a0a0);
+}
+
+.gradient-btn {
+  background-image: linear-gradient(135deg, #808080, #a0a0a0);
+  @apply hover:opacity-90 transition-all duration-300 text-white font-medium;
+}
+
+.glass-effect {
+  background: rgba(30, 30, 30, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+/* Hover effects */
+.hover-effect {
+  transition: all 0.3s ease;
+}
+
+.hover-effect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 8px rgba(128, 128, 128, 0.4);
+}
+
+.hover-input {
+  transition: all 0.3s ease;
+}
+
+.hover-input:hover:not(:disabled) {
+  border-color: rgba(128, 128, 128, 0.5);
+  box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.2);
+}
+
+.hover-pulse {
+  transition: all 0.3s ease;
+}
+
+.hover-pulse:hover {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(128, 128, 128, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(128, 128, 128, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(128, 128, 128, 0);
+  }
+}
+
+.button-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-hover::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+.button-hover:hover::after {
+  animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  20% {
+    transform: scale(25, 25);
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(40, 40);
+  }
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(128, 128, 128, 0.7);
+}
+
+.glow-border {
+  box-shadow: 0 0 5px rgba(128, 128, 128, 0.7);
+  border-color: rgba(128, 128, 128, 0.7) !important;
+}
+
+.glow {
+  box-shadow: 0 0 15px rgba(128, 128, 128, 0.7);
+}
+
+/* Fix for text wrapping in minimized sidebar */
+.group-data-\[collapsible\=icon\]:w-\[--sidebar-width-icon\] .truncate {
+  width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 0;
+}
+
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    display: none;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  .mobile-padding {
+    padding: 0.5rem !important;
+  }
+
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Mobile menu buttons */
+.mobile-menu-button {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background-color: rgba(31, 31, 31, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(75, 75, 75, 0.5);
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-button:hover {
+  background-color: rgba(50, 50, 50, 0.9);
+}
+
+/* Tambahkan di globals.css */
+.code-block-container {
+  transition: opacity 0.2s ease-out;
+}
+
+pre code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6A9955 !important;
+}
+
+.token.punctuation {
+  color: #d4d4d4 !important;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #b5cea8 !important;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #ce9178 !important;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #d4d4d4 !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #569cd6 !important;
+}
+
+.token.function {
+  color: #dcdcaa !important;
+}
+
+.token.class-name {
+  color: #4ec9b0 !important;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #d16969 !important;
+}
+
+/* Improved mobile responsiveness */
+@media (max-width: 768px) {
+  .sidebar-trigger-visible {
+    display: block !important;
+  }
+
+  .mobile-padding-top {
+    padding-top: 4rem !important;
+  }
+}
+
+/* Mobile sidebar styles */
+@media (max-width: 768px) {
+  .sidebar-mobile {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 80%;
+    max-width: 300px;
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .sidebar-mobile-left {
+    left: 0;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-mobile-right {
+    right: 0;
+    transform: translateX(100%);
+  }
+  
+  .sidebar-mobile-open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+pelajari ini tunggu perintah selanjutnya

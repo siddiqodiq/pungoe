@@ -49,31 +49,28 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+  
+  html, body, #__next {
+    @apply h-full w-full m-0 p-0;
+  }
+  
   body {
     @apply bg-background text-foreground;
-  }
-
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.3);
-    border-radius: 10px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(128, 128, 128, 0.5);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
   }
 }
+/* Styles khusus landing page */
+.database-container {
+  @apply w-full h-full min-h-screen;
+}
+
+
+
 
 .gradient-text {
   @apply text-transparent bg-clip-text;
@@ -310,50 +307,25 @@ pre code {
 }
 
 /* Improved mobile responsiveness */
+/* Add these to your existing database.css */
 @media (max-width: 768px) {
-  .sidebar-trigger-visible {
-    display: block !important;
-  }
-
-  .mobile-padding-top {
-    padding-top: 4rem !important;
-  }
-}
-
-/* Mobile sidebar styles */
-@media (max-width: 768px) {
-  .sidebar-mobile {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    z-index: 40;
-    width: 80%;
-    max-width: 300px;
-    transition: transform 0.3s ease-in-out;
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
-  .sidebar-mobile-left {
-    left: 0;
-    transform: translateX(-100%);
+  .table-responsive table {
+    min-width: 600px;
   }
   
-  .sidebar-mobile-right {
-    right: 0;
-    transform: translateX(100%);
+  .table-cell-mobile {
+    padding: 0.5rem;
+    font-size: 0.875rem;
   }
   
-  .sidebar-mobile-open {
-    transform: translateX(0);
-  }
-  
-  .sidebar-mobile-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 30;
-    background-color: rgba(0, 0, 0, 0.5);
+  .table-header-mobile {
+    padding: 0.5rem;
+    font-size: 0.75rem;
   }
 }
 

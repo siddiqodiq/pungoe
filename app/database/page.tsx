@@ -1,3 +1,6 @@
+"use client"
+import React from "react"
+
 import {
   Card,
   CardHeader,
@@ -21,19 +24,6 @@ import { SupportFiles } from "@/components/database/support-files"
 import { SearchHeader } from "@/components/database/search-header"
 
 export default function SecurityDatabasePage() {
-  // Contoh data CVE
-  const cveData = [
-    {
-      id: "CVE-2023-1234",
-      title: "Remote Code Execution in Apache Server",
-      severity: "Critical",
-      cvss: 9.8,
-      published: "2023-05-15",
-      updated: "2023-05-20"
-    },
-    // ... other data
-  ]
-
   // Contoh payload templates
   const payloadTemplates = [
     {
@@ -76,38 +66,13 @@ export default function SecurityDatabasePage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* CVE Database Tab */}
           <TabsContent value="cve" className="mt-6">
             <Card className="glass-effect hover-effect">
               <CardHeader>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <CardTitle>CVE Database</CardTitle>
-                    <CardDescription>Kumpulan kerentanan umum dan eksposur</CardDescription>
-                  </div>
-                  <Button variant="outline" className="flex items-center gap-2 w-full md:w-auto">
-                    <Filter className="h-4 w-4" /> <span>Filter</span>
-                  </Button>
-                </div>
+                <CardTitle>CVE Database</CardTitle>
+                <CardDescription>Kumpulan kerentanan umum dan eksposur</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <CveTable data={cveData} />
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col md:flex-row justify-between gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing 1 to {cveData.length} of {cveData.length} entries
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    Previous
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
-                </div>
-              </CardFooter>
+              <CveTable />
             </Card>
           </TabsContent>
 
