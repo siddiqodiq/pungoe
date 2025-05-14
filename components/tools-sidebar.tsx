@@ -28,7 +28,10 @@ import {
   Map,
   Pickaxe,
   Sword,
-  FolderClock
+  FolderClock,
+  DoorOpenIcon as DoorOpen,
+  Antenna,
+  Calculator
 } from "lucide-react"
 import { tools, getCategoryLabel } from "@/lib/tools"
 import { useEffect } from "react"
@@ -79,13 +82,14 @@ export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
       "URL Crawler [FUZZ]": Pickaxe,
       "Deep URL Crawler": Sword,
       "Wayback Machine Dorking": FolderClock,
-      
       "URL Fuzzer": FileSearch,
+      "CORS Misc Scanner": Antenna,
+      "Open Redirect Exploiter": DoorOpen,
       Nuclei: AlertTriangle,
       Nikto: Server,
       "XSS Exploiter": Code,
       "SQLi Exploiter": Database,
-      "CVE Map": Map,
+      "CVSS Scoring": Calculator,
     }
 
     return iconMap[toolName] || Braces

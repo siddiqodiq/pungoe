@@ -54,7 +54,7 @@ export const tools: Tool[] = [
     id: "5",
     name: "URL Fuzzer",
     description: "Fuzz URLs to discover hidden paths.",
-    category: "recon",
+    category: "exploit",
     status: "Under Development",
   },
   {
@@ -87,8 +87,8 @@ export const tools: Tool[] = [
   },
   {
     id: "10",
-    name: "CVE Map",
-    description: "Navigate the CVE jungle with ease.",
+    name: "CVSS Scoring",
+    description: "Calculate CVSS score for vulnerabilities.",
     category: "utils",
     status: "Under Development",
   },
@@ -98,7 +98,21 @@ export const tools: Tool[] = [
     description: "Use the Wayback Machine to find historical data.",
     category: "recon",
     status: "Available",
-  }
+  },
+  {
+    id: "16",
+    name: "CORS Misc Scanner",
+    description: "Crawl a website using katana to find all juicy endpoints.",
+    category: "exploit",
+    status: "Under Development",
+  },
+  {
+    id: "17",
+    name: "Open Redirect Exploiter",
+    description: "Exploit open redirect vulnerabilities.",
+    category: "exploit",
+    status: "Under Development",
+  },
 
 ]
 

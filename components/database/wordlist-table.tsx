@@ -27,8 +27,7 @@ export const WordlistTable = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead className="w-[150px]">Type</TableHead>
-                <TableHead className="w-[100px]">Entries</TableHead>
-                <TableHead className="w-[80px]">Size</TableHead>
+    
                 <TableHead className="w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -39,8 +38,6 @@ export const WordlistTable = () => {
                   <TableCell>
                     <Badge variant="default">{wordlist.type}</Badge>
                   </TableCell>
-                  <TableCell>{wordlist.entries}</TableCell>
-                  <TableCell>{wordlist.size}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       {wordlist.previewAvailable && wordlist.filePath && (

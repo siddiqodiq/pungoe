@@ -3,7 +3,6 @@ export interface SecurityResource {
   id: string
   name: string
   type: string
-  entries?: string
   size: string
   filePath?: string
   sourceUrl?: string
@@ -53,31 +52,38 @@ export const payloadTemplates: SecurityResource[] = [
 export const wordlists: SecurityResource[] = [
   {
     id: "WL-001",
-    name: "Common Passwords",
-    type: "Password",
-    entries: "10,000",
-    size: "1.2 MB",
-    filePath: "/resources/wordlists/common-passwords.txt",
+    name: "All in one wordlist from secLists",
+    type: "All",
+    size: "",
+    filePath: "",
     sourceUrl: "https://github.com/danielmiessler/SecLists",
     previewAvailable: true
   },
   {
     id: "WL-002",
-    name: "Directory Brute",
+    name: "Web common directories",
     type: "Directory",
-    entries: "5,000",
-    size: "500 KB",
-    filePath: "/resources/wordlists/directory-brute.txt",
-    sourceUrl: "https://github.com/danielmiessler/SecLists",
+    size: "",
+    filePath: "",
+    sourceUrl: "https://github.com/emadshanab/WordLists-20111129",
     previewAvailable: true
   },
   {
     id: "WL-003",
-    name: "API Endpoints",
-    type: "API",
-    entries: "2,000",
-    size: "300 KB",
-    sourceUrl: "https://github.com/danielmiessler/SecLists",
-    previewAvailable: false
+    name: "Rockyou2024 - leaked passwords",
+    type: "Password",
+    size: "",
+    filePath: "",
+    sourceUrl: "https://github.com/intelligencegroup-io/RockYou2024",
+    previewAvailable: true,
+  },
+   {
+    id: "WL-004",
+    name: "David Palma wordlists",
+    type: "All",
+    size: "",
+    filePath: "",
+    sourceUrl: "https://github.com/david-palma/wordlists",
+    previewAvailable: true,
   },
 ]
