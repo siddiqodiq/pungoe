@@ -1,3 +1,4 @@
+// components/WordlistTable.tsx
 import {
   Table,
   TableHeader,
@@ -8,42 +9,95 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Download, ExternalLink, FileText } from "lucide-react"
+import { wordlists } from "@/lib/security-resources"
+import { useState } from "react"
+import { TextFilePreview } from "@/components/database/text-file-preview"
 
-export const WordlistTable = ({ data }: { data: any[] }) => {
+export const WordlistTable = () => {
+  const [selectedResource, setSelectedResource] = useState<any>(null)
+
   return (
-    <ScrollArea className="h-[400px] md:h-[500px]">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[80px]">ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="min-w-[100px]">Type</TableHead>
-            <TableHead className="min-w-[100px]">Entries</TableHead>
-            <TableHead className="min-w-[80px]">Size</TableHead>
-            <TableHead className="min-w-[100px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((wordlist) => (
-            <TableRow key={wordlist.id}>
-              <TableCell className="font-medium">{wordlist.id}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{wordlist.name}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{wordlist.type}</Badge>
-              </TableCell>
-              <TableCell>{wordlist.entries}</TableCell>
-              <TableCell>{wordlist.size}</TableCell>
-              <TableCell>
-                <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                  <Download className="h-4 w-4" /> <span className="hidden md:inline">Download</span>
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </ScrollArea>
+    <>
+      <ScrollArea className="h-[400px] md:h-[500px] w-full">
+        <div className="min-w-[600px] md:min-w-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="w-[150px]">Type</TableHead>
+                <TableHead className="w-[100px]">Entries</TableHead>
+                <TableHead className="w-[80px]">Size</TableHead>
+                <TableHead className="w-[120px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {wordlists.map((wordlist) => (
+                <TableRow key={wordlist.id}>
+                  <TableCell>{wordlist.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="default">{wordlist.type}</Badge>
+                  </TableCell>
+                  <TableCell>{wordlist.entries}</TableCell>
+                  <TableCell>{wordlist.size}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {wordlist.previewAvailable && wordlist.filePath && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedResource(wordlist)}
+                        >
+                          <FileText className="h-4 w-4 mr-2" /> Preview
+                        </Button>
+                      )}
+                      {wordlist.filePath ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          asChild
+                        >
+                          <a 
+                            href={wordlist.filePath} 
+                            download 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          asChild
+                        >
+                          <a 
+                            href={wordlist.sourceUrl} 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </ScrollArea>
+
+      {selectedResource && (
+        <TextFilePreview
+          resource={selectedResource}
+          open={!!selectedResource}
+          onOpenChange={(open) => !open && setSelectedResource(null)}
+        />
+      )}
+    </>
   )
 }

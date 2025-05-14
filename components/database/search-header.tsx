@@ -10,13 +10,6 @@ export const SearchHeader = () => {
           Akses koleksi CVE, payload templates, dan wordlists untuk pentesting
         </p>
       </div>
-      <div className="relative w-full md:w-auto">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search database..."
-          className="pl-10 w-full md:w-[300px] hover-input"
-        />
-      </div>
     </div>
   )
 }

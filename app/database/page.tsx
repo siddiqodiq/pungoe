@@ -94,9 +94,6 @@ export default function SecurityDatabasePage() {
                     <CardTitle>Payload Templates</CardTitle>
                     <CardDescription>Koleksi payload untuk berbagai jenis eksploitasi</CardDescription>
                   </div>
-                  <Button variant="outline" className="flex items-center gap-2 w-full md:w-auto">
-                    <Filter className="h-4 w-4" /> <span>Filter</span>
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -129,9 +126,6 @@ export default function SecurityDatabasePage() {
                     <CardTitle>Wordlists</CardTitle>
                     <CardDescription>Koleksi wordlist untuk brute-force dan fuzzing</CardDescription>
                   </div>
-                  <Button variant="outline" className="flex items-center gap-2 w-full md:w-auto">
-                    <Filter className="h-4 w-4" /> <span>Filter</span>
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>

