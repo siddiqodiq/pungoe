@@ -104,7 +104,7 @@ export const tools: Tool[] = [
     name: "CORS Misc Scanner",
     description: "Crawl a website using katana to find all juicy endpoints.",
     category: "exploit",
-    status: "Under Development",
+    status: "Available",
   },
   {
     id: "17",

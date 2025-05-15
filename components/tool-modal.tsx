@@ -11,6 +11,7 @@ import { WaybackDorkingModal } from "./tools/wayback-dorking-modal"
 import { WhoisLookupModal } from "./tools/whois-lookup-modal"
 import { NmapScanModal } from "./tools/nmap-scan-modal"
 import { CvssCalculatorModal } from "./tools/cvss-calculator-modal"
+import { CorsScannerModal } from "./tools/cors-scanner-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -112,6 +113,15 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
   case "CVSS Scoring":
   return (
         <CvssCalculatorModal
+          tool={selectedTool}
+          isOpen={internalIsOpen}
+          onClose={handleClose}
+          onSendToChat={onSendToChat}
+        />
+      )
+    case "CORS Misc Scanner":
+      return (
+        <CorsScannerModal
           tool={selectedTool}
           isOpen={internalIsOpen}
           onClose={handleClose}
