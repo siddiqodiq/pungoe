@@ -221,27 +221,27 @@ export function CvssCalculatorModal({ tool, isOpen, onClose, onSendToChat }: Cvs
             </div>
 
             <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-  <div className="flex items-center justify-between">
-    <div>
-      <h4 className="font-medium">CVSS Base Score</h4>
-      <p className="text-sm text-gray-400">Calculated in real-time</p>
-    </div>
-    <div className="text-right">
-      <div className="text-3xl font-bold">{baseScore.toFixed(1)}</div>
-      <Badge 
-        className={
-          severity === "Critical" ? "bg-red-500/20 text-red-500" :
-          severity === "High" ? "bg-orange-500/20 text-orange-500" :
-          severity === "Medium" ? "bg-yellow-500/20 text-yellow-500" : 
-          severity === "Low" ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500"
-        }
-        variant="outline"
-      >
-        {severity}
-      </Badge>
-    </div>
-  </div>
-</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium">CVSS Base Score</h4>
+                <p className="text-sm text-gray-400">Calculated in real-time</p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold">{baseScore.toFixed(1)}</div>
+                <Badge 
+                  className={
+                    severity === "Critical" ? "bg-red-500/20 text-red-500" :
+                    severity === "High" ? "bg-orange-500/20 text-orange-500" :
+                    severity === "Medium" ? "bg-yellow-500/20 text-yellow-500" : 
+                    severity === "Low" ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500"
+                  }
+                  variant="outline"
+                >
+                  {severity}
+                </Badge>
+              </div>
+            </div>
+          </div>
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button variant="outline" onClick={onClose}>
