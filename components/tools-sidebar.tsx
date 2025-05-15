@@ -31,7 +31,8 @@ import {
   FolderClock,
   DoorOpenIcon as DoorOpen,
   Antenna,
-  Calculator
+  Calculator,
+  Pointer
 } from "lucide-react"
 import { tools, getCategoryLabel } from "@/lib/tools"
 import { useEffect } from "react"
@@ -76,6 +77,7 @@ export function ToolsSidebar({ onSelectTool, activeTool }: ToolsSidebarProps) {
   const getToolIcon = (toolName: string) => {
     const iconMap: Record<string, any> = {
       "Whois Lookup": Search,
+      "Google Dork": Pointer,
       "Subdomain Finder": Globe,
       "WAF Detector": Shield,
       "Port Scanner": Scan,

@@ -12,6 +12,8 @@ import { WhoisLookupModal } from "./tools/whois-lookup-modal"
 import { NmapScanModal } from "./tools/nmap-scan-modal"
 import { CvssCalculatorModal } from "./tools/cvss-calculator-modal"
 import { CorsScannerModal } from "./tools/cors-scanner-modal"
+import { GoogleDorkModal } from "./tools/google-dork-modal"
+import { OpenRedirectModal } from "./tools/open-redirect-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -128,6 +130,25 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
           onSendToChat={onSendToChat}
         />
       )
+      case "Google Dork":
+  return (
+    <GoogleDorkModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />
+  )
+  case "Open Redirect Exploiter":
+  return (
+    <OpenRedirectModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />
+  );
+
     default:
       return (
         <BaseToolModal tool={selectedTool} isOpen={internalIsOpen} onClose={handleClose}>

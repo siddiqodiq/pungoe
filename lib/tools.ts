@@ -15,6 +15,13 @@ export const tools: Tool[] = [
     status: "Available",
   },
   {
+    id: "18",
+    name: "Google Dork",
+    description: "Generate Google dork queries to find sensitive information.",
+    category: "recon",
+    status: "Available",
+  },
+  {
     id: "1",
     name: "Subdomain Finder",
     description: "Find subdomains of a target domain.",
@@ -111,9 +118,8 @@ export const tools: Tool[] = [
     name: "Open Redirect Exploiter",
     description: "Exploit open redirect vulnerabilities.",
     category: "exploit",
-    status: "Under Development",
-  },
-
+    status: "Available",
+  }
 ]
 
 export const getCategoryLabel = (category: string): string => {
