@@ -10,6 +10,7 @@ import { DeepCrawlerModal } from "./tools/deep-crawler-modal"
 import { WaybackDorkingModal } from "./tools/wayback-dorking-modal"
 import { WhoisLookupModal } from "./tools/whois-lookup-modal"
 import { NmapScanModal } from "./tools/nmap-scan-modal"
+import { CvssCalculatorModal } from "./tools/cvss-calculator-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -108,6 +109,15 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
       onSendToChat={onSendToChat}
     />
   )
+  case "CVSS Scoring":
+  return (
+        <CvssCalculatorModal
+          tool={selectedTool}
+          isOpen={internalIsOpen}
+          onClose={handleClose}
+          onSendToChat={onSendToChat}
+        />
+      )
     default:
       return (
         <BaseToolModal tool={selectedTool} isOpen={internalIsOpen} onClose={handleClose}>

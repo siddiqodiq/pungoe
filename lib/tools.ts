@@ -90,7 +90,7 @@ export const tools: Tool[] = [
     name: "CVSS Scoring",
     description: "Calculate CVSS score for vulnerabilities.",
     category: "utils",
-    status: "Under Development",
+    status: "Available",
   },
   {
     id: "15",
