@@ -1,4 +1,5 @@
 // components/PayloadTable.tsx
+"use client"
 import {
   Table,
   TableHeader,

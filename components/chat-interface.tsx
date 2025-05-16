@@ -24,9 +24,11 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [isAtBottom, setIsAtBottom] = useState(true)
   const streamingRef = useRef(false)
   const { toast } = useToast()
-
+  const scrollLockRef = useRef(false)
+  const lastMessageLengthRef = useRef(0)
   useEffect(() => {
     // Open modal when activeTool changes to a non-null value
     if (activeTool) {
@@ -39,7 +41,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   }
 
   // Process content and identify code blocks
- const processContent = useCallback((content: string) => {
+  const processContent = useCallback((content: string) => {
     const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = []
     let buffer = ""
     let inCodeBlock = false
@@ -81,7 +83,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     return parts
   }, [])
 
-  const MessageContent = memo(({ content }: { content: string }) => {
+   const MessageContent = memo(({ content }: { content: string }) => {
     const parts = useMemo(() => processContent(content), [content, processContent])
   
     return (
@@ -105,6 +107,8 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       </div>
     )
   })
+
+
    // Handle scroll behavior
   useEffect(() => {
     const container = chatContainerRef.current
@@ -112,14 +116,24 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container
-      const isAtBottom = scrollHeight - (scrollTop + clientHeight) < 50
-      setShowScrollButton(!isAtBottom)
+      const newIsAtBottom = scrollHeight - (scrollTop + clientHeight) < 50
+      
+      setIsAtBottom(newIsAtBottom)
+      setShowScrollButton(!newIsAtBottom)
+      
+      // Jika user scroll ke atas, lock auto-scroll sementara
+      if (!newIsAtBottom && scrollTop < lastMessageLengthRef.current) {
+        scrollLockRef.current = true
+      } else if (newIsAtBottom) {
+        scrollLockRef.current = false
+      }
+      
+      lastMessageLengthRef.current = scrollTop
     }
 
     container.addEventListener('scroll', handleScroll)
     return () => container.removeEventListener('scroll', handleScroll)
   }, [])
-
    // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     setTimeout(() => {
@@ -127,13 +141,15 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     }, 100)
   }, [])
 
+  // Auto-scroll handling
   useEffect(() => {
-    if (messages.length > 0) {
+    if (isAtBottom && !scrollLockRef.current) {
       scrollToBottom('auto')
     }
-  }, [messages.length, scrollToBottom])
+  }, [messages, isAtBottom, scrollToBottom])
 
-   const handleSubmit = async (e: React.FormEvent) => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || streamingRef.current) return
 
@@ -195,7 +211,6 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
           ))
           lastUpdateTime = now
           accumulatedContent = ""
-          scrollToBottom('auto')
         }
       }
     } catch (error) {
@@ -213,9 +228,9 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     } finally {
       streamingRef.current = false
       setIsLoading(false)
-      scrollToBottom('smooth')
     }
   }
+
   const handleSendToolResults = async (content: string) => {
     setIsToolModalOpen(false);
     
@@ -300,7 +315,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     }
   };
 
-  return (
+   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -312,9 +327,10 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
               <h2 className="text-lg font-bold gradient-text">PentestAI Assistant</h2>
             </div>
           </div>
+
           <div 
             ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+            className="flex-1 overflow-y-auto p-4 space-y-4 relative scroll-smooth"
           >
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
@@ -326,7 +342,8 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
                   </p>
                 </div>
               </div>
-            ) : ( messages.map((message) => (
+            ) : (
+              messages.map((message) => (
                 <Card
                   key={message.id}
                   className={`p-4 ${
@@ -356,9 +373,14 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
               ))
             )}
             <div ref={messagesEndRef} />
-             {showScrollButton && (
+            
+            {showScrollButton && (
               <button
-                onClick={() => scrollToBottom('smooth')}
+                onClick={() => {
+                  scrollToBottom('smooth')
+                  setIsAtBottom(true)
+                  scrollLockRef.current = false
+                }}
                 className="sticky bottom-4 left-1/2 transform -translate-x-1/2 p-2 rounded-full bg-gray-800 border border-gray-700 shadow-lg hover:bg-gray-700 transition-colors"
                 aria-label="Scroll to bottom"
               >
@@ -399,7 +421,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       </div>
 
       <ToolModal 
-        toolId={activeTool} // Use activeTool directly instead of selectedTool
+        toolId={activeTool}
         isOpen={isToolModalOpen}
         onClose={handleCloseToolModal}
         onSendToChat={handleSendToolResults}

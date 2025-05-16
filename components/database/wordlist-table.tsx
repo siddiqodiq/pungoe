@@ -1,4 +1,5 @@
 // components/WordlistTable.tsx
+"use client"
 import {
   Table,
   TableHeader,
