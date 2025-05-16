@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback, memo } from "react"
-import { Send, Loader2, Copy, Check } from "lucide-react"
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react"
+import { Send, Loader2, Copy, Check, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
@@ -21,12 +21,11 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isToolModalOpen, setIsToolModalOpen] = useState(false)
-  const [selectedTool, setSelectedTool] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const streamingRef = useRef(false)
   const { toast } = useToast()
-  const [prevActiveTool, setPrevActiveTool] = useState<string | null>(null)
-  
 
   useEffect(() => {
     // Open modal when activeTool changes to a non-null value
@@ -40,7 +39,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   }
 
   // Process content and identify code blocks
-  const processContent = useCallback((content: string) => {
+ const processContent = useCallback((content: string) => {
     const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = []
     let buffer = ""
     let inCodeBlock = false
@@ -83,11 +82,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   }, [])
 
   const MessageContent = memo(({ content }: { content: string }) => {
-    const parts = processContent(content)
-    
-    useEffect(() => {
-      Prism.highlightAll()
-    }, [content])
+    const parts = useMemo(() => processContent(content), [content, processContent])
   
     return (
       <div className="whitespace-pre-wrap">
@@ -110,8 +105,35 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       </div>
     )
   })
+   // Handle scroll behavior
+  useEffect(() => {
+    const container = chatContainerRef.current
+    if (!container) return
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isAtBottom = scrollHeight - (scrollTop + clientHeight) < 50
+      setShowScrollButton(!isAtBottom)
+    }
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
+   // Auto-scroll to bottom when new messages arrive
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior })
+    }, 100)
+  }, [])
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom('auto')
+    }
+  }, [messages.length, scrollToBottom])
+
+   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || streamingRef.current) return
 
@@ -152,6 +174,8 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       }])
 
       const decoder = new TextDecoder()
+      let lastUpdateTime = 0
+      let accumulatedContent = ""
       
       while (streamingRef.current) {
         const { done, value } = await reader.read()
@@ -159,12 +183,20 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
 
         const chunk = decoder.decode(value, { stream: true })
         fullContent += chunk
+        accumulatedContent += chunk
         
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { ...msg, content: fullContent } 
-            : msg
-        ))
+        // Throttle updates to reduce re-renders
+        const now = Date.now()
+        if (now - lastUpdateTime > 100 || done) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: fullContent } 
+              : msg
+          ))
+          lastUpdateTime = now
+          accumulatedContent = ""
+          scrollToBottom('auto')
+        }
       }
     } catch (error) {
       console.error("Error:", error)
@@ -181,9 +213,9 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     } finally {
       streamingRef.current = false
       setIsLoading(false)
+      scrollToBottom('smooth')
     }
   }
-
   const handleSendToolResults = async (content: string) => {
     setIsToolModalOpen(false);
     
@@ -280,8 +312,10 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
               <h2 className="text-lg font-bold gradient-text">PentestAI Assistant</h2>
             </div>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+          >
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center max-w-md p-6 rounded-lg bg-gray-800/50 border border-gray-700">
@@ -292,8 +326,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
                   </p>
                 </div>
               </div>
-            ) : (
-              messages.map((message) => (
+            ) : ( messages.map((message) => (
                 <Card
                   key={message.id}
                   className={`p-4 ${
@@ -323,6 +356,15 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
               ))
             )}
             <div ref={messagesEndRef} />
+             {showScrollButton && (
+              <button
+                onClick={() => scrollToBottom('smooth')}
+                className="sticky bottom-4 left-1/2 transform -translate-x-1/2 p-2 rounded-full bg-gray-800 border border-gray-700 shadow-lg hover:bg-gray-700 transition-colors"
+                aria-label="Scroll to bottom"
+              >
+                <ChevronDown className="h-5 w-5 text-gray-300" />
+              </button>
+            )}
           </div>
 
           <div className="border-t border-gray-800 p-4">
