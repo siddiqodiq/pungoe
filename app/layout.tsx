@@ -9,9 +9,13 @@ import { SidebarEventsListener } from "@/components/sidebar-event-listener"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "PentestAI - Penetration Testing Assistant",
-  description: "AI-powered penetration testing assistant",
-  generator: 'v0.dev'
+  title: "Pungoe Pentest - Penetration Testing Assistant",
+  description: "Penetration testing assistant with AI",
+  icons: {
+    icon: "logo.ico",
+    shortcut: "logo.ico",
+    apple: "/apple-touch-icon.png",
+  },
 }
 
 export default function RootLayout({
