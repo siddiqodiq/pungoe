@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Logo } from "@/components/ui/logo"
+import { Logoglitch } from "@/components/ui/logoglitch"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -19,7 +19,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md mx-auto"> {/* Container tambahan */}
         <Card className="w-full border-gray-800 bg-black/80 backdrop-blur-md">
           <CardHeader className="space-y-1 text-center">
-          <Logo className="mx-auto h-[80px] w-auto text-white" />
+          <Logoglitch className="mx-auto h-[80px] w-auto text-white" />
             <CardTitle className="text-2xl font-bold gradient-text">Welcome back</CardTitle>
             <CardDescription className="text-gray-400">Enter your credentials to access your account</CardDescription>
           </CardHeader>
