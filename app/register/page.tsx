@@ -34,28 +34,6 @@ export default function RegisterPage() {
       <CardDescription className="text-gray-400">Enter your information to create your account</CardDescription>
     </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="first-name" className="text-sm font-medium text-gray-300">
-                  First name
-                </label>
-                <Input
-                  id="first-name"
-                  placeholder="Fulan"
-                  className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="last-name" className="text-sm font-medium text-gray-300">
-                  Last name
-                </label>
-                <Input
-                  id="last-name"
-                  placeholder="Fulanah"
-                  className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input"
-                />
-              </div>
-            </div>
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-gray-300">
                 Email

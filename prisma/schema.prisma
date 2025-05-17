@@ -1,0 +1,67 @@
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  username          String    @unique
+  email             String    @unique
+  password          String    // Harus di-hash sebelum disimpan
+  name              String?
+  avatar            String?
+  role              Role      @default(USER)
+  isVerified        Boolean   @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  chats             Chat[]
+  
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Chat {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  title        String   // Judul percakapan
+  modelUsed    String   // Model yang digunakan (misal: "ollama/llama2", "gpt-4", dll)
+  temperature  Float?   // Parameter temperature yang digunakan
+  maxTokens    Int?     // Parameter max tokens
+  messages     Message[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isArchived   Boolean  @default(false)
+  
+  @@map("chats")
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  chatId      String
+  chat        Chat     @relation(fields: [chatId], references: [id])
+  content     String
+  role        MessageRole // 'user' atau 'assistant' atau 'system'
+  createdAt   DateTime @default(now())
+  tokensUsed  Int?     // Jumlah token yang digunakan
+  
+  @@map("messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
