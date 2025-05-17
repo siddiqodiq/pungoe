@@ -11,6 +11,7 @@ import { CodeBlock } from "@/components/code-block"
 import Prism from 'prismjs'
 import { useToast } from "@/components/ui/use-toast"
 import { Logo } from "@/components/ui/logo"
+import 'prismjs/themes/prism-tomorrow.css' 
 
 interface ChatInterfaceProps {
   activeTool: string | null
@@ -94,7 +95,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
               <CodeBlock 
                 key={`code-${index}`}
                 code={part.content} 
-                language={part.language} 
+                language={part.language ?? "text"} 
               />
             )
           }

@@ -4,20 +4,19 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import Prism from "@/lib/prism";
+import "prismjs/themes/prism-tomorrow.css";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-jsx";
+import "prismjs/components/prism-python";
+// Tambahkan import bahasa lain sesuai kebutuhan
 
-// Memoized CodeBlock component to prevent unnecessary re-renders
 export const CodeBlock = memo(({ code, language = "text" }: { code: string; language?: string }) => {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (codeRef.current) {
-      // Only highlight if content changed significantly
-      const currentCode = codeRef.current.textContent;
-      if (currentCode !== code) {
-        codeRef.current.textContent = code;
-        Prism.highlightElement(codeRef.current);
-      }
+      Prism.highlightElement(codeRef.current);
     }
   }, [code, language]);
 
@@ -44,8 +43,8 @@ export const CodeBlock = memo(({ code, language = "text" }: { code: string; lang
         </button>
       </div>
       <pre className="!m-0 !rounded-none !bg-[#1e1e1e] overflow-x-auto">
-        <code 
-          ref={codeRef} 
+        <code
+          ref={codeRef}
           className={`language-${language} !font-mono !text-sm`}
         >
           {code}
