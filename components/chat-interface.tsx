@@ -85,29 +85,32 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   }, [])
 
    const MessageContent = memo(({ content }: { content: string }) => {
-  const parts = useMemo(() => processContent(content), [content, processContent]);
-  
+  const parts = useMemo(() => processContent(content), [content]);
+
   return (
     <div className="whitespace-pre-wrap">
       {parts.map((part, index) => {
         if (part.type === 'code') {
+          // Optimasi berat untuk code block
           return (
             <CodeBlock 
               key={`code-${index}-${hashCode(part.content)}`}
               code={part.content.trim()} 
               language={part.language ?? "text"} 
             />
-          )
+          );
         }
+        
+        // Render sederhana untuk teks biasa
         return (
           <span key={`text-${index}`} className="text-gray-200">
             {part.content}
           </span>
-        )
+        );
       })}
     </div>
-  )
-})
+  );
+});
 
 // Helper function untuk generate stable key
 function hashCode(str: string): number {
