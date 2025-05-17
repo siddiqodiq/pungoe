@@ -1,24 +1,34 @@
-// components/code-block.tsx
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, useMemo } from "react";
 import { Copy, Check } from "lucide-react";
 import Prism from "@/lib/prism";
 import "prismjs/themes/prism-tomorrow.css";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-jsx";
-import "prismjs/components/prism-python";
-// Tambahkan import bahasa lain sesuai kebutuhan
 
 export const CodeBlock = memo(({ code, language = "text" }: { code: string; language?: string }) => {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
+  const preRef = useRef<HTMLPreElement>(null);
+
+  // Memoize the highlighted code to prevent unnecessary re-highlighting
+  const highlightedCode = useMemo(() => {
+    if (typeof window !== 'undefined' && Prism.languages[language]) {
+      try {
+        return Prism.highlight(code, Prism.languages[language], language);
+      } catch (e) {
+        console.warn(`Failed to highlight for language ${language}`, e);
+        return code;
+      }
+    }
+    return code;
+  }, [code, language]);
 
   useEffect(() => {
+    // Clean up Prism classes to prevent duplication
     if (codeRef.current) {
-      Prism.highlightElement(codeRef.current);
+      codeRef.current.innerHTML = highlightedCode;
     }
-  }, [code, language]);
+  }, [highlightedCode]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -27,7 +37,7 @@ export const CodeBlock = memo(({ code, language = "text" }: { code: string; lang
   };
 
   return (
-    <div className="relative my-2 rounded-md bg-[#1e1e1e] border border-gray-700 overflow-hidden transition-all duration-100">
+    <div className="relative my-2 rounded-md bg-[#1e1e1e] border border-gray-700 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-gray-700">
         <span className="text-xs text-gray-400 font-mono">{language}</span>
         <button
@@ -42,14 +52,15 @@ export const CodeBlock = memo(({ code, language = "text" }: { code: string; lang
           )}
         </button>
       </div>
-      <pre className="!m-0 !rounded-none !bg-[#1e1e1e] overflow-x-auto">
+      <pre ref={preRef} className="!m-0 !rounded-none !bg-[#1e1e1e] overflow-x-auto">
         <code
           ref={codeRef}
           className={`language-${language} !font-mono !text-sm`}
-        >
-          {code}
-        </code>
+          dangerouslySetInnerHTML={{ __html: highlightedCode }}
+        />
       </pre>
     </div>
   );
 });
+
+CodeBlock.displayName = "CodeBlock";

@@ -85,30 +85,40 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   }, [])
 
    const MessageContent = memo(({ content }: { content: string }) => {
-    const parts = useMemo(() => processContent(content), [content, processContent])
+  const parts = useMemo(() => processContent(content), [content, processContent]);
   
-    return (
-      <div className="whitespace-pre-wrap">
-        {parts.map((part, index) => {
-          if (part.type === 'code') {
-            return (
-              <CodeBlock 
-                key={`code-${index}`}
-                code={part.content} 
-                language={part.language ?? "text"} 
-              />
-            )
-          }
+  return (
+    <div className="whitespace-pre-wrap">
+      {parts.map((part, index) => {
+        if (part.type === 'code') {
           return (
-            <span key={`text-${index}`} className="text-gray-200">
-              {part.content}
-            </span>
+            <CodeBlock 
+              key={`code-${index}-${hashCode(part.content)}`}
+              code={part.content.trim()} 
+              language={part.language ?? "text"} 
+            />
           )
-        })}
-      </div>
-    )
-  })
+        }
+        return (
+          <span key={`text-${index}`} className="text-gray-200">
+            {part.content}
+          </span>
+        )
+      })}
+    </div>
+  )
+})
 
+// Helper function untuk generate stable key
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash;
+}
 
    // Handle scroll behavior
   useEffect(() => {
@@ -182,38 +192,40 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
       if (!reader) throw new Error("No reader available")
 
       let fullContent = ""
-      const assistantMessageId = `assistant-${Date.now()}`
-      
-      setMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: "", 
-        id: assistantMessageId 
-      }])
+    const assistantMessageId = `assistant-${Date.now()}`
+    let updateQueue = ""
+    let lastUpdateTime = 0
 
-      const decoder = new TextDecoder()
-      let lastUpdateTime = 0
-      let accumulatedContent = ""
       
-      while (streamingRef.current) {
-        const { done, value } = await reader.read()
-        if (done) break
+     setMessages(prev => [...prev, { 
+  role: "assistant", 
+  content: "", 
+  id: assistantMessageId 
+}])
 
-        const chunk = decoder.decode(value, { stream: true })
-        fullContent += chunk
-        accumulatedContent += chunk
-        
-        // Throttle updates to reduce re-renders
-        const now = Date.now()
-        if (now - lastUpdateTime > 100 || done) {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: fullContent } 
-              : msg
-          ))
-          lastUpdateTime = now
-          accumulatedContent = ""
-        }
-      }
+const decoder = new TextDecoder()
+const updateInterval = 100 // ms
+
+while (streamingRef.current) {
+  const { done, value } = await reader.read()
+  if (done) break
+
+  const chunk = decoder.decode(value, { stream: true })
+  fullContent += chunk
+  updateQueue += chunk
+  
+  // Throttle updates lebih agresif
+  const now = Date.now()
+  if (now - lastUpdateTime > updateInterval || done) {
+    setMessages(prev => prev.map(msg => 
+      msg.id === assistantMessageId 
+        ? { ...msg, content: fullContent } 
+        : msg
+    ))
+    lastUpdateTime = now
+    updateQueue = ""
+  }
+}
     } catch (error) {
       console.error("Error:", error)
       setMessages(prev => [...prev, {
