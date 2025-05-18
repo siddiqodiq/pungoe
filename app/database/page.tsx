@@ -22,9 +22,12 @@ import { PayloadTable } from "@/components/database/payload-table"
 import { WordlistTable } from "@/components/database/wordlist-table"
 import { SupportFiles } from "@/components/database/support-files"
 import { SearchHeader } from "@/components/database/search-header"
+import { useRouter } from "next/navigation"
 import router from "next/router"
 
 export default function SecurityDatabasePage() {
+    const router = useRouter()
+  
   // Contoh payload templates
   const payloadTemplates = [
     {
@@ -52,13 +55,13 @@ export default function SecurityDatabasePage() {
   return (
     <div className="min-h-screen p-4 md:p-8 bg-background">
       <div className="max-w-7xl mx-auto w-full">
-         <Button 
+        <Button 
           variant="outline" 
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/dashboard")} // Update disini
           className="mb-4 flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          Dashboard
         </Button>
         <SearchHeader />
         

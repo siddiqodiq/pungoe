@@ -80,8 +80,18 @@ export function MainSidebar() {
   }, [])
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Shield },
-    { id: "database", label: "Database", icon: Database },
+    { 
+      id: "dashboard", 
+      label: "Dashboard", 
+      icon: Shield,
+      onClick: () => router.push("/dashboard")
+    },
+    { 
+      id: "database", 
+      label: "Database", 
+      icon: Database,
+      onClick: () => router.push("/database")
+    },
   ]
 
   const settingsItems = [
@@ -100,25 +110,29 @@ export function MainSidebar() {
       </div>
     </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    isActive={activeItem === item.id}
-                    onClick={() => setActiveItem(item.id)}
-                    className={`hover-effect ${activeItem === item.id ? "glow-border" : ""}`}
-                  >
-                    <item.icon className={`h-5 w-5 ${activeItem === item.id ? "text-gray-400" : ""}`} />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+       <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.id}>
+                <SidebarMenuButton
+                  isActive={activeItem === item.id}
+                  onClick={() => {
+                    setActiveItem(item.id)
+                    item.onClick()
+                  }}
+                  className={`hover-effect ${activeItem === item.id ? "glow-border" : ""}`}
+                >
+                  <item.icon className={`h-5 w-5 ${activeItem === item.id ? "text-gray-400" : ""}`} />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
 
         <SidebarGroup>
           <SidebarGroupLabel>Chat History</SidebarGroupLabel>
