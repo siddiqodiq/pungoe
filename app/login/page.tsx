@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Logoglitch } from "@/components/ui/logoglitch"
+import { signIn } from "next-auth/react"
+
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,38 +21,37 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const isMobile = useIsMobile()
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Email and password are required")
-      return
-    }
-
-    setIsLoading(true)
-    setError("")
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed")
-      }
-
-      // Redirect to dashboard or welcome page
-      router.push("/dashboard")
-    } catch (err) {
-      setError(err.message || "Login failed")
-    } finally {
-      setIsLoading(false)
-    }
+  // app/login/page.tsx (update bagian handleLogin)
+const handleLogin = async () => {
+  if (!email || !password) {
+    setError("Email and password are required")
+    return
   }
+
+  setIsLoading(true)
+  setError("")
+
+  try {
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+      callbackUrl: '/dashboard'
+    })
+
+    if (result?.error) {
+      throw new Error(result.error)
+    }
+
+    if (result?.url) {
+      router.push(result.url)
+    }
+  } catch (err) {
+    setError(err.message || "Login failed")
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-black p-4">

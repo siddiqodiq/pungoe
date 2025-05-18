@@ -37,35 +37,47 @@ export default function RegisterPage() {
     }
   }, [password, confirmPassword])
 
-  const handleRegister = async () => {
-    if (passwordError) return
-    
-    setIsLoading(true)
-    setError("")
-    
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password, name }),
-      })
+  
+const handleRegister = async () => {
+  if (passwordError) return
+  
+  setIsLoading(true)
+  setError("")
+  
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password, name }),
+    })
 
-      const data = await response.json()
+    const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || "Registration failed")
-      }
-
-      // Show username setup modal
-      setShowUsernameModal(true)
-    } catch (err) {
-      setError(err.message || "Registration failed")
-    } finally {
-      setIsLoading(false)
+    if (!response.ok) {
+      throw new Error(data.error || "Registration failed")
     }
+
+    // Auto login after registration
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false
+    })
+
+    if (result?.error) {
+      throw new Error(result.error)
+    }
+
+    // Show username setup modal
+    setShowUsernameModal(true)
+  } catch (err) {
+    setError(err.message || "Registration failed")
+  } finally {
+    setIsLoading(false)
   }
+}
 
     const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

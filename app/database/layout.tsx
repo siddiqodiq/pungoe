@@ -1,3 +1,4 @@
+import { RouteGuard } from '@/components/route-guard'
 import './database.css'
 
 export default function DatabaseLayout({
@@ -7,7 +8,10 @@ export default function DatabaseLayout({
 }) {
   return (
     <div className="database-container">
+        <RouteGuard requireAuth>
       {children}
+      </RouteGuard>
     </div>
+
   )
 }

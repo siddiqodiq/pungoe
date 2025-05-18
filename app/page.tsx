@@ -13,9 +13,16 @@ export default function LandingPage() {
   const [progress, setProgress] = useState(0);
   const [showSecure, setShowSecure] = useState(false);
   const [barVisible, setBarVisible] = useState(true);
-   const router = useRouter();
+  const router = useRouter();
+  const { data: session, status } = useSession()
 
- 
+   const handleGetStarted = () => {
+    if (status === 'authenticated') {
+      router.push('/dashboard')
+    } else {
+      router.push('/login')
+    }
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -96,13 +103,14 @@ export default function LandingPage() {
 
         {/* Buttons */}
         <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4">
-          <Button
-            size="lg"
-            onClick={() => router.push("/dashboard")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/20"
-          >
-            Get Started
-          </Button>
+             <Button
+        size="lg"
+        onClick={handleGetStarted}
+        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/20"
+      >
+        Get Started
+      </Button>
+
         </div>
 
         {/* Hacking Animation */}
