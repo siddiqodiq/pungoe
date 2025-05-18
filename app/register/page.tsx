@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Shield, Eye, EyeOff, AlertCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Logoglitch } from "@/components/ui/logoglitch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { signIn } from "next-auth/react"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -24,6 +25,9 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("")
   const [name, setName] = useState("")
   const [usernameError, setUsernameError] = useState("")
+
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
 
   useEffect(() => {
     if (password && confirmPassword && password !== confirmPassword) {
@@ -63,6 +67,24 @@ export default function RegisterPage() {
     }
   }
 
+    const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+      callbackUrl
+    })
+
+    if (result?.error) {
+      setError(result.error)
+    } else {
+      router.push(callbackUrl)
+    }
+  }
+
   const handleUsernameSubmit = async () => {
     if (!username) {
       setUsernameError("Username is required")
@@ -96,13 +118,14 @@ export default function RegisterPage() {
       }
 
       // Redirect to welcome page or dashboard
-      router.push("/welcome")
+      router.push("/dashboard")
     } catch (err) {
       setUsernameError(err.message || "Failed to set username")
     } finally {
       setIsLoading(false)
     }
   }
+
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-black p-4">
