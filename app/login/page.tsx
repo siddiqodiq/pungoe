@@ -59,7 +59,7 @@ export default function LoginPage() {
         <Card className="w-full border-gray-800 bg-black/80 backdrop-blur-md">
           <CardHeader className="space-y-1 text-center">
             <Logoglitch className="mx-auto h-[80px] w-auto text-white" />
-            <CardTitle className="text-2xl font-bold gradient-text">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold gradient-text text-gray-400">Welcome back</CardTitle>
             <CardDescription className="text-gray-400">Enter your credentials to access your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -77,7 +77,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="name@example.com"
-                className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input"
+                className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input text-gray-300"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -87,7 +87,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="text-sm font-medium text-gray-300">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-xs text-blue-500 hover:text-blue-400 hover:underline">
+                <Link href="/forgot-password" className="text-xs text-blue-500 hover:text-blue-400 hover:underline ">
                   Forgot password?
                 </Link>
               </div>
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10 hover-input"
+                  className="bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10 hover-input text-gray-300"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />

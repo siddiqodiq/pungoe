@@ -6,29 +6,16 @@ import { Logoglitch } from "@/components/ui/logoglitch"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import router from "next/router"
 
 export default function LandingPage() {
   const [glitch, setGlitch] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSecure, setShowSecure] = useState(false);
   const [barVisible, setBarVisible] = useState(true);
-  const { data: session, status } = useSession()
-  const router = useRouter()
+   const router = useRouter();
 
-  const handleGetStarted = () => {
-    if (status === "authenticated") {
-      router.push('/dashboard')
-    } else {
-      router.push('/login')
-    }
-  }
-
-  useEffect(() => {
-    // Jika sudah login, redirect ke dashboard
-    if (status === "authenticated") {
-      router.push('/dashboard')
-    }
-  }, [status, router])
+ 
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -64,9 +51,6 @@ export default function LandingPage() {
     }
   }, [progress, glitch]);
 
-  if (status === "authenticated") {
-    return null; // atau loading spinner selama redirect
-  }
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
@@ -114,7 +98,7 @@ export default function LandingPage() {
         <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4">
           <Button
             size="lg"
-            onClick={handleGetStarted}
+            onClick={() => router.push("/dashboard")}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/20"
           >
             Get Started

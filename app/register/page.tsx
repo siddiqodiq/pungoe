@@ -134,7 +134,7 @@ export default function RegisterPage() {
         <Card className="w-full border-gray-800 bg-black/80 backdrop-blur-md">
           <CardHeader className="space-y-1 text-center">
             <Logoglitch className="mx-auto h-[80px] w-auto text-white" />
-            <CardTitle className="text-2xl font-bold gradient-text">Create an account</CardTitle>
+            <CardTitle className="text-2xl font-bold gradient-text text-gray-400">Create an account</CardTitle>
             <CardDescription className="text-gray-400">Enter your information to create your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -152,7 +152,7 @@ export default function RegisterPage() {
                 id="name"
                 type="text"
                 placeholder="Your name"
-                className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input"
+                className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input text-gray-300"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -165,7 +165,7 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="name@example.com"
-                className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input"
+                className="bg-gray-900/70 border-gray-800 focus:border-blue-600 hover-input text-gray-300"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -179,14 +179,14 @@ export default function RegisterPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10 hover-input"
+                  className="bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10 hover-input text-gray-300"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 "
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
@@ -202,7 +202,7 @@ export default function RegisterPage() {
                   id="confirm-password"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10 hover-input ${
+                  className={`bg-gray-900/70 border-gray-800 focus:border-blue-600 pr-10 hover-input text-gray-300 ${
                     passwordError ? "border-red-500" : ""
                   }`}
                   value={confirmPassword}
