@@ -142,8 +142,8 @@ export function MainSidebar() {
               </DropdownMenuContent>
             </DropdownMenu>
             <div>
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-gray-400">Security Analyst</p>
+              <p className="text-sm font-medium">Fullname</p>
+              <p className="text-xs text-gray-400">Username</p>
             </div>
           </div>
 
