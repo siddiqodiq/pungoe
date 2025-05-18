@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Logo } from "./ui/logo"
+import { useSession, signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
+
 
 // Sample chat history data
 const chatHistory = [
@@ -39,6 +42,25 @@ const chatHistory = [
 
 export function MainSidebar() {
   const [activeItem, setActiveItem] = useState("dashboard")
+  const { data: session } = useSession()
+  const router = useRouter()
+
+  // Fungsi untuk mendapatkan inisial dari nama
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'US'
+    const names = name.split(' ')
+    let initials = names[0].substring(0, 1).toUpperCase()
+    if (names.length > 1) {
+      initials += names[names.length - 1].substring(0, 1).toUpperCase()
+    }
+    return initials
+  }
+
+  // Fungsi untuk handle logout
+  const handleLogout = async () => {
+    await signOut({ redirect: false })
+    router.push('/')
+  }
 
   useEffect(() => {
     const handleToggle = () => {
@@ -74,7 +96,7 @@ export function MainSidebar() {
         <div className="flex h-10 w-10 items-center justify-center rounded-md gradient-bg hover-pulse">
           <Logo className="h-9 w-9 text-white" />
         </div>
-        <div className="font-bold text-lg gradient-text">PentestAI</div>
+        <div className="font-bold text-lg gradient-text">Pungoe Pentest</div>
       </div>
     </SidebarHeader>
       <SidebarContent>
@@ -119,12 +141,17 @@ export function MainSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="h-10 w-10 border-2 border-gray-500/30 cursor-pointer hover:border-gray-400 transition-colors">
-                  <AvatarImage src="/avatar.png" alt="User" />
-                  <AvatarFallback className="bg-gray-800 text-gray-300">JD</AvatarFallback>
+                  {session?.user?.avatar ? (
+                    <AvatarImage src={session.user.avatar} alt="User" />
+                  ) : (
+                    <AvatarFallback className="bg-gray-800 text-gray-300">
+                      {getInitials(session?.user?.name)}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Dummy</DropdownMenuLabel>
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
@@ -135,15 +162,19 @@ export function MainSidebar() {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <div>
-              <p className="text-sm font-medium">Fullname</p>
-              <p className="text-xs text-gray-400">Username</p>
+              <p className="text-sm font-medium">
+                {session?.user?.name || 'User'}
+              </p>
+              <p className="text-xs text-gray-400">
+                @{session?.user?.username || 'username'}
+              </p>
             </div>
           </div>
 

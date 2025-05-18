@@ -12,6 +12,7 @@ import Prism from 'prismjs'
 import { useToast } from "@/components/ui/use-toast"
 import { Logo } from "@/components/ui/logo"
 import 'prismjs/themes/prism-tomorrow.css' 
+import { useSession } from "next-auth/react"
 
 interface ChatInterfaceProps {
   activeTool: string | null
@@ -30,6 +31,7 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const { toast } = useToast()
   const scrollLockRef = useRef(false)
   const lastMessageLengthRef = useRef(0)
+  
   useEffect(() => {
     // Open modal when activeTool changes to a non-null value
     if (activeTool) {
@@ -331,6 +333,7 @@ while (streamingRef.current) {
     }
   };
 
+  const { data: session } = useSession()
    return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
       <div className="flex flex-1 overflow-hidden">
@@ -340,7 +343,9 @@ while (streamingRef.current) {
               <div className="flex h-8 w-8 items-center justify-center rounded-full gradient-bg">
                 <Logo className="h-7 w-7 text-white" />
               </div>
-              <h2 className="text-lg font-bold gradient-text">PentestAI Assistant</h2>
+               <h2 className="text-lg font-bold gradient-text">
+      Hi, {session?.user?.username || 'User'} !
+    </h2>
             </div>
           </div>
 
