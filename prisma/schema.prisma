@@ -16,8 +16,7 @@ model User {
   name              String?
   avatar            String?
   role              Role      @default(USER)
-  isVerified        Boolean   @default(false)
-  verificationToken String?
+  isVerified        Boolean   @default(true)
   resetToken        String?
   resetTokenExpiry  DateTime?
   createdAt         DateTime  @default(now())
