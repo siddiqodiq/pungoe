@@ -1,6 +1,14 @@
 // app/types.ts
 export interface Message {
-    role: "user" | "assistant";
-    content: string;
-    id?: string; // Optional untuk unique identifier
-  }
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  createdAt?: string
+}
+
+export interface Chat {
+  id: string
+  title: string
+  messages: Message[]
+  createdAt: string
+}

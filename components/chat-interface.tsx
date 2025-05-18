@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Logo } from "@/components/ui/logo"
 import 'prismjs/themes/prism-tomorrow.css' 
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 
 interface ChatInterfaceProps {
   activeTool: string | null
@@ -31,6 +32,8 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
   const { toast } = useToast()
   const scrollLockRef = useRef(false)
   const lastMessageLengthRef = useRef(0)
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
   
   useEffect(() => {
     // Open modal when activeTool changes to a non-null value
@@ -85,6 +88,40 @@ export function ChatInterface({ activeTool }: ChatInterfaceProps) {
     
     return parts
   }, [])
+
+  // Load chat history when chatId changes
+  useEffect(() => {
+    const chatId = searchParams.get('chat')
+    setCurrentChatId(chatId)
+
+    const loadChat = async () => {
+      if (!chatId) {
+        setMessages([])
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/chat/history/${chatId}`)
+        if (!response.ok) throw new Error('Failed to load chat')
+        
+        const data = await response.json()
+        const formattedMessages = data.messages.map((msg: any) => ({
+          id: msg.id,
+          role: msg.role.toLowerCase(),
+          content: msg.content
+        }))
+        
+        setMessages(formattedMessages)
+      } catch (error) {
+        console.error('Error loading chat:', error)
+        setMessages([])
+      }
+    }
+
+    loadChat()
+  }, [searchParams])
+
+
 
    const MessageContent = memo(({ content }: { content: string }) => {
   const parts = useMemo(() => processContent(content), [content]);
@@ -171,13 +208,15 @@ function hashCode(str: string): number {
 
     setIsLoading(true)
     streamingRef.current = true
+    
     const userMessage: Message = {
       role: "user",
       content: input,
       id: Date.now().toString()
     }
     
-    setMessages(prev => [...prev, userMessage])
+    const newMessages = [...messages, userMessage]
+    setMessages(newMessages)
     setInput("")
 
     try {
@@ -186,7 +225,10 @@ function hashCode(str: string): number {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: [...messages, userMessage] })
+        body: JSON.stringify({ 
+          messages: newMessages,
+          chatId: currentChatId
+        })
       })
 
       if (!response.ok) {
@@ -197,40 +239,29 @@ function hashCode(str: string): number {
       if (!reader) throw new Error("No reader available")
 
       let fullContent = ""
-    const assistantMessageId = `assistant-${Date.now()}`
-    let updateQueue = ""
-    let lastUpdateTime = 0
-
+      const assistantMessageId = `assistant-${Date.now()}`
       
-     setMessages(prev => [...prev, { 
-  role: "assistant", 
-  content: "", 
-  id: assistantMessageId 
-}])
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: "", 
+        id: assistantMessageId 
+      }])
 
-const decoder = new TextDecoder()
-const updateInterval = 100 // ms
+      const decoder = new TextDecoder()
+      
+      while (streamingRef.current) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-while (streamingRef.current) {
-  const { done, value } = await reader.read()
-  if (done) break
-
-  const chunk = decoder.decode(value, { stream: true })
-  fullContent += chunk
-  updateQueue += chunk
-  
-  // Throttle updates lebih agresif
-  const now = Date.now()
-  if (now - lastUpdateTime > updateInterval || done) {
-    setMessages(prev => prev.map(msg => 
-      msg.id === assistantMessageId 
-        ? { ...msg, content: fullContent } 
-        : msg
-    ))
-    lastUpdateTime = now
-    updateQueue = ""
-  }
-}
+        const chunk = decoder.decode(value, { stream: true })
+        fullContent += chunk
+        
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: fullContent } 
+            : msg
+        ))
+      }
     } catch (error) {
       console.error("Error:", error)
       setMessages(prev => [...prev, {
@@ -238,16 +269,12 @@ while (streamingRef.current) {
         content: "Sorry, I encountered an error. Please try again.",
         id: `error-${Date.now()}`
       }])
-      toast({
-        title: "Error",
-        description: "Failed to get response from AI",
-        variant: "destructive",
-      })
     } finally {
       streamingRef.current = false
       setIsLoading(false)
     }
   }
+
 
   const handleSendToolResults = async (content: string) => {
     setIsToolModalOpen(false);

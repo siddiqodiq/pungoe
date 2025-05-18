@@ -7,9 +7,15 @@ import { ToolsSidebar } from "@/components/tools-sidebar"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { Menu, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
+
+
 
 export default function Home() {
   const [activeTool, setActiveTool] = useState<string | null>(null)
+    const searchParams = useSearchParams()
+  const chatId = searchParams.get('chat')
 
   const handleToolSelect = (toolId: string) => {
     if (toolId === activeTool) {
@@ -19,6 +25,22 @@ export default function Home() {
       setActiveTool(toolId)
     }
   }
+
+    useEffect(() => {
+    const loadChat = async () => {
+      if (chatId) {
+        try {
+          const response = await fetch(`/api/chat/history/${chatId}`)
+          const data = await response.json()
+          // Set messages sesuai data dari database
+        } catch (error) {
+          console.error('Failed to load chat:', error)
+        }
+      }
+    }
+
+    loadChat()
+  }, [chatId])
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#212121]">
@@ -50,7 +72,10 @@ export default function Home() {
             </Button>
           </div>
 
-          <ChatInterface activeTool={activeTool} />
+           <ChatInterface 
+            activeTool={activeTool} 
+            currentChatId={chatId}
+          />
         </div>
       </SidebarInset>
       <ToolsSidebar 

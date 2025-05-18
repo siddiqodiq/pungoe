@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Shield, Database, Settings, LogOut, User, Bell, Moon, HelpCircle } from "lucide-react"
+import { Shield, Database, Settings, LogOut, User, Bell, Moon, HelpCircle, Plus, MoreVertical } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +28,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Logo } from "./ui/logo"
 import { useSession, signOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 
 // Sample chat history data
@@ -42,8 +42,28 @@ const chatHistory = [
 
 export function MainSidebar() {
   const [activeItem, setActiveItem] = useState("dashboard")
+  const [chatHistory, setChatHistory] = useState<any[]>([])
   const { data: session } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
+
+  const loadChatHistory = async () => {
+    if (!session?.user?.id) return
+    
+    try {
+      const response = await fetch('/api/chat/history')
+      const data = await response.json()
+      setChatHistory(data)
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+    }
+  }
+
+  // Refresh history ketika route berubah atau session berubah
+  useEffect(() => {
+    loadChatHistory()
+  }, [session, pathname])
+
 
   // Fungsi untuk mendapatkan inisial dari nama
   const getInitials = (name?: string | null) => {
@@ -99,6 +119,39 @@ export function MainSidebar() {
     { id: "help", label: "Help & Support", icon: HelpCircle },
   ]
 
+  
+
+  // Create new chat
+  const handleNewChat = async () => {
+    try {
+      const response = await fetch('/api/chat/history', {
+        method: 'POST'
+      })
+      const newChat = await response.json()
+      router.push(`/dashboard?chat=${newChat.id}`)
+      router.refresh()
+    } catch (error) {
+      console.error('Failed to create new chat:', error)
+    }
+  }
+
+  // Delete chat
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      await fetch(`/api/chat/history?id=${chatId}`, {
+        method: 'DELETE'
+      })
+      loadChatHistory()
+    } catch (error) {
+      console.error('Failed to delete chat:', error)
+    }
+  }
+
+  useEffect(() => {
+    loadChatHistory()
+  }, [session])
+
+
   return (
     <Sidebar side="left" variant="sidebar" collapsible="offcanvas">
       <SidebarHeader className="p-3">
@@ -135,19 +188,54 @@ export function MainSidebar() {
 
 
         <SidebarGroup>
+        <div className="flex items-center justify-between px-4 py-2">
           <SidebarGroupLabel>Chat History</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {chatHistory.map((chat) => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton className="hover-effect">
-                    <span className="truncate">{chat.title}</span>
+          <button 
+            onClick={handleNewChat}
+            className="p-1 rounded-full hover:bg-gray-700 transition-colors"
+            aria-label="New chat"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {chatHistory.map((chat) => (
+              <SidebarMenuItem key={chat.id}>
+                <div className="flex items-center justify-between w-full group">
+                  <SidebarMenuButton
+                    onClick={() => router.push(`/dashboard?chat=${chat.id}`)}
+                    className="flex-1 hover-effect"
+                  >
+                    <span className="truncate">
+                      {chat.title || 'New Chat'}
+                    </span>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        className="p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Chat options"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteChat(chat.id)}
+                        className="text-red-500 focus:text-red-500"
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <div className="p-4 border-t border-gray-800">
