@@ -1,41 +1,321 @@
-📄 app/api/tools/whois-lookup/route.ts:
-    // app/api/tools/whois-lookup/route.ts
-    import { NextResponse } from 'next/server';
-    
-    export async function POST(req: Request) {
-      try {
-        const { domain } = await req.json();
-        
-        if (!domain) {
-          return NextResponse.json(
-            { error: 'Domain is required' },
-            { status: 400 }
-          );
-        }
-    
-        // Forward to Flask backend
-        const flaskResponse = await fetch('http://localhost:5000/api/whois', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain })
+welcome saya sudah saya ubah menjadi page.tsx dan layout.tsx pada root project
+perbaru middleware. setiap app dibuka maka akan membuka / terlebih dahulu, kemudian akan ditekan get started, jika belum login maka akan diarahkan ke /login atau /register. Jika sudah login maka akan diarahkan ke /dashboard. /dashboard dan /database tidak bisa diakses jika belum login. Ini app/layout.tsx yang mungkin kamu perlu untuk auth state:
+import "./landing.css"
+import { Inter } from "next/font/google"
+const inter = Inter({ subsets: ["latin"] })
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body  className={`${inter.className} bg-black`}>
+        <div className="landing-container">
+          {children}
+        </div>
+      </body>
+    </html>
+  )
+}
+
+dashboard/layout.tsx:
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "../../app/globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { RouteGuard } from "@/components/route-guard"
+import { SidebarEventsListener } from "@/components/sidebar-event-listener" 
+
+const inter = Inter({ subsets: ["latin"] })
+
+export const metadata: Metadata = {
+  title: "Pungoe Pentest - Penetration Testing Assistant",
+  description: "Penetration testing assistant with AI",
+  icons: {
+    icon: "logo.ico",
+    shortcut: "logo.ico",
+    apple: "/apple-touch-icon.png",
+  },
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} bg-black`}>
+        <ThemeProvider 
+          attribute="class" 
+          defaultTheme="dark" 
+          enableSystem={false} 
+          forcedTheme="dark"
+        >
+          <RouteGuard>
+            <SidebarProvider>
+              {/* Tambahkan listener untuk event sidebar */}
+              <SidebarEventsListener />
+              {children}
+            </SidebarProvider>
+          </RouteGuard>
+        </ThemeProvider>
+      </body>
+    </html>
+  )
+}
+
+dashboard/page.tsx:
+"use client"
+
+import { useState } from "react"
+import { MainSidebar } from "@/components/main-sidebar"
+import { ChatInterface } from "@/components/chat-interface"
+import { ToolsSidebar } from "@/components/tools-sidebar"
+import { SidebarInset } from "@/components/ui/sidebar"
+import { Menu, Wrench } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+export default function Home() {
+  const [activeTool, setActiveTool] = useState<string | null>(null)
+
+  const handleToolSelect = (toolId: string) => {
+    if (toolId === activeTool) {
+      setActiveTool(null)
+      setTimeout(() => setActiveTool(toolId), 10)
+    } else {
+      setActiveTool(toolId)
+    }
+  }
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-[#212121]">
+      <MainSidebar />
+      <SidebarInset className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden relative">
+          {/* Mobile menu buttons - only visible on small screens */}
+          <div className="md:hidden fixed top-4 left-4 z-50">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-gray-800/80 backdrop-blur-sm border-gray-700 hover:bg-gray-700"
+              onClick={() => document.dispatchEvent(new CustomEvent('toggle-left-sidebar'))}
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </div>
+
+          <div className="md:hidden fixed top-4 right-4 z-50">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-gray-800/80 backdrop-blur-sm border-gray-700 hover:bg-gray-700"
+              onClick={() => document.dispatchEvent(new CustomEvent('toggle-right-sidebar'))}
+            >
+              <Wrench className="h-5 w-5" />
+              <span className="sr-only">Toggle Tools</span>
+            </Button>
+          </div>
+
+          <ChatInterface activeTool={activeTool} />
+        </div>
+      </SidebarInset>
+      <ToolsSidebar 
+        onSelectTool={handleToolSelect} 
+        activeTool={activeTool} 
+      />
+    </div>
+  )
+}
+
+app/page.tsx:
+// app/landing/page.tsx
+import HeroWithCanvasReveal from "@/components/hero-with-canvas-reveal"
+
+export default function LandingPage() {
+  return (
+    <main>
+      <HeroWithCanvasReveal />
+    </main>
+  )
+}
+
+// components/hero-with-canvas-reveal.tsx
+// components/hero-with-canvas-reveal.tsx
+"use client"
+import { CanvasRevealEffect } from "@/components/ui/canvas-reveal-effect"
+import { Button } from "@/components/ui/button"
+import { Logoglitch } from "@/components/ui/logoglitch"
+import { useEffect, useState } from "react"
+
+export default function HeroWithCanvasReveal() {
+  const [glitch, setGlitch] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showSecure, setShowSecure] = useState(false);
+  const [barVisible, setBarVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGlitch(true);
+      setTimeout(() => setGlitch(false), 200);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Reset state when glitch starts
+    if (glitch) {
+      setProgress(0);
+      setShowSecure(false);
+      setBarVisible(true);
+    }
+  }, [glitch]);
+
+  useEffect(() => {
+    if (!glitch && progress < 100) {
+      const timer = setTimeout(() => {
+        setProgress(prev => {
+          const newProgress = prev + 10;
+          if (newProgress >= 100) {
+            setShowSecure(true);
+            // Set timeout to hide the bar after 1.5 seconds
+            setTimeout(() => setBarVisible(false), 1500);
+            return 100;
+          }
+          return newProgress;
         });
-    
-        if (!flaskResponse.ok) {
-          const error = await flaskResponse.text();
-          return NextResponse.json(
-            { error: error || 'Failed to perform WHOIS lookup' },
-            { status: flaskResponse.status }
-          );
-        }
-    
-        const result = await flaskResponse.json();
-        return NextResponse.json(result);
-    
-      } catch (error) {
-        console.error('WHOIS lookup error:', error);
-        return NextResponse.json(
-          { error: error instanceof Error ? error.message : 'Internal server error' },
-          { status: 500 }
-        );
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [progress, glitch]);
+
+  return (
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
+      {/* Canvas Reveal Effect Background */}
+      <div className="absolute inset-0">
+        <CanvasRevealEffect
+          animationSpeed={2}
+          containerClassName="bg-black"
+          colors={[
+            [0, 100, 255],   // Blue
+            [100, 150, 255], // Light blue
+            [0, 50, 150],    // Dark blue
+          ]}
+          dotSize={2}
+          opacities={[0.1, 0.2, 0.4, 0.6, 0.8, 0.9, 1, 1, 1, 1]}
+        />
+      </div>
+
+      {/* Glitch Effect Overlay */}
+      {glitch && (
+        <div className="absolute inset-0 bg-blue-900/20 pointer-events-none animate-pulse" />
+      )}
+
+      {/* Hero Content */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
+        {/* logo with Glitch Effect */}
+        <div className={`mb-8 w-40 h-40 sm:w-52 sm:h-52 md:w-64 md:h-64 transition-all duration-300 ${glitch ? 'translate-x-1' : ''}`}>
+          <Logoglitch className={`w-full h-full text-blue-400 ${glitch ? 'opacity-80' : 'opacity-100'}`} />
+        </div>
+        
+        {/* Title with Glitch Effect */}
+        <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-center mb-2 ${glitch ? 'text-blue-300' : 'text-blue-400'}`}>
+          <span className="relative">
+            <span className={`absolute inset-0 bg-blue-500/30 ${glitch ? 'block' : 'hidden'}`}></span>
+            Pungoe Pentest
+          </span>
+        </h1>
+
+        {/* Subtitle */}
+        <p className="mt-4 sm:mt-5 text-lg sm:text-xl text-blue-200/80 max-w-2xl mx-auto text-center">
+          Join the digital rebellion - learn to hack ethically and protect the future. 
+        </p>
+
+        {/* Buttons */}
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4">
+          <Button
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/20"
+          >
+            Get Started
+          </Button>
+        </div>
+
+        {/* Hacking Animation */}
+        <div className="mt-12 text-blue-300 font-mono text-xs sm:text-sm flex flex-col items-center">
+          <div className={`${glitch ? 'text-blue-500' : ''}`}>
+            {glitch 
+              ? '>_ Initializing security protocols...' 
+              : showSecure 
+                ? '>_ System secure' 
+                : '>_ Loading security protocols...'}
+          </div>
+          <div className={`h-1 w-20 bg-blue-500/50 mt-2 overflow-hidden transition-opacity duration-500 ${barVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <div 
+              className={`h-full bg-blue-400 transition-all duration-300 ease-out`}
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+components/route-guards.tsx:
+"use client"
+
+import type React from "react"
+
+import { useEffect, useState } from "react"
+import { useRouter, usePathname } from "next/navigation"
+
+interface RouteGuardProps {
+  children: React.ReactNode
+}
+
+export function RouteGuard({ children }: RouteGuardProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [authorized, setAuthorized] = useState(false)
+
+  useEffect(() => {
+    // This is a simplified auth check
+    // In a real app, you would check for a valid token or session
+    const authCheck = () => {
+      // Public paths that don't require authentication
+      const publicPaths = ["/login", "/register"]
+      const path = pathname
+
+      // If the path is not public and the user is not logged in, redirect to login
+      // For demo purposes, we'll just check if the path is not public
+      if (!publicPaths.includes(path)) {
+        // For demo purposes, we'll just set authorized to true
+        // In a real app, you would check for a valid token or session
+        setAuthorized(true)
+
+        // Uncomment this to redirect to login
+        // router.push("/login")
+      } else {
+        setAuthorized(true)
       }
     }
+
+    authCheck()
+  }, [pathname, router])
+
+  // Show loading indicator while checking auth
+  if (!authorized) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
+}

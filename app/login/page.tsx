@@ -44,7 +44,7 @@ export default function LoginPage() {
       }
 
       // Redirect to dashboard or welcome page
-      router.push("/welcome")
+      router.push("/dashboard")
     } catch (err) {
       setError(err.message || "Login failed")
     } finally {
