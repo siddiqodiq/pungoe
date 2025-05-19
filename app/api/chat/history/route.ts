@@ -63,6 +63,7 @@ export async function POST(req: Request) {
   }
 }
 
+// app/api/chat/history/route.ts
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions)
   const { searchParams } = new URL(req.url)
@@ -73,15 +74,26 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    await prisma.chat.delete({
-      where: { 
-        id: chatId,
-        userId: session.user.id 
-      }
-    })
+    // Mulai transaction
+    const deleteOperations = await prisma.$transaction([
+      // Pertama hapus semua messages yang terkait dengan chat ini
+      prisma.message.deleteMany({
+        where: { 
+          chatId: chatId
+        }
+      }),
+      // Kemudian hapus chat-nya
+      prisma.chat.delete({
+        where: { 
+          id: chatId,
+          userId: session.user.id 
+        }
+      })
+    ])
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('Error deleting chat:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

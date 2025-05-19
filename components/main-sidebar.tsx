@@ -28,7 +28,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Logo } from "./ui/logo"
 import { useSession, signOut } from "next-auth/react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { toast } from "./ui/use-toast"
 
 
 
@@ -38,18 +39,8 @@ export function MainSidebar() {
   const { data: session } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
-  const loadChatHistory = async () => {
-    if (!session?.user?.id) return
-    
-    try {
-      const response = await fetch('/api/chat/history')
-      const data = await response.json()
-      setChatHistory(data)
-    } catch (error) {
-      console.error('Failed to load chat history:', error)
-    }
-  }
 
   // Refresh history ketika route berubah atau session berubah
   useEffect(() => {
@@ -127,21 +118,64 @@ export function MainSidebar() {
     }
   }
 
+
   // Delete chat
-  const handleDeleteChat = async (chatId: string) => {
+
+  const currentChatId = searchParams.get('chat')
+
+  const loadChatHistory = async () => {
+    if (!session?.user?.id) return
+    
     try {
-      await fetch(`/api/chat/history?id=${chatId}`, {
+      const response = await fetch('/api/chat/history')
+      const data = await response.json()
+      setChatHistory(data)
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load chat history",
+        variant: "destructive",
+      })
+    }
+  }
+
+// components/main-sidebar.tsx
+ const handleDeleteChat = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chat/history?id=${chatId}`, {
         method: 'DELETE'
       })
-      loadChatHistory()
+
+      if (!response.ok) {
+        throw new Error('Failed to delete chat')
+      }
+
+      // Jika chat yang sedang aktif dihapus, redirect ke dashboard
+      if (currentChatId === chatId) {
+        router.push('/dashboard')
+      }
+
+      // Refresh chat history
+      await loadChatHistory()
+
+      toast({
+        title: "Success",
+        description: "Chat deleted successfully",
+      })
     } catch (error) {
       console.error('Failed to delete chat:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete chat",
+        variant: "destructive",
+      })
     }
   }
 
   useEffect(() => {
     loadChatHistory()
-  }, [session])
+  }, [session, pathname])
 
 
   return (
