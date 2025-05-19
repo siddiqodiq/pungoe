@@ -100,7 +100,6 @@ export function MainSidebar() {
   ]
 
   const settingsItems = [
-    { id: "appearance", label: "Appearance", icon: Moon },
     { id: "help", label: "Help & Support", icon: HelpCircle },
   ]
 
