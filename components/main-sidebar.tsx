@@ -31,14 +31,6 @@ import { useSession, signOut } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
 
 
-// Sample chat history data
-const chatHistory = [
-  { id: "1", title: "Network scan results" },
-  { id: "2", title: "SQL injection analysis" },
-  { id: "3", title: "XSS vulnerability report" },
-  { id: "4", title: "Port scanning session" },
-  { id: "5", title: "Password cracking attempt" },
-]
 
 export function MainSidebar() {
   const [activeItem, setActiveItem] = useState("dashboard")
