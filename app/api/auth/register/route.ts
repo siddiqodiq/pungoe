@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { PrismaClient } from "@prisma/client"
+import { v4 as uuidv4 } from "uuid"
 
 const prisma = new PrismaClient()
 
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const { email, password, name } = await request.json()
 
-    // Validasi input
+    // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Cek jika email sudah terdaftar
+    // Check if email already registered
     const existingUser = await prisma.user.findUnique({
       where: { email }
     })
@@ -31,13 +32,13 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Buat user baru
+    // Create new user with temporary username
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || "",
-        username: email.split('@')[0] // Default username dari email
+        username: `temp_${uuidv4()}` // Temporary unique username
       }
     })
 

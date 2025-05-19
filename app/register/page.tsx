@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Shield, Eye, EyeOff, AlertCircle, X } from "lucide-react"
+import { Shield, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,81 +25,75 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("")
   const [name, setName] = useState("")
   const [usernameError, setUsernameError] = useState("")
+  const [usernameSet, setUsernameSet] = useState(false)
 
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
 
+  // Username validation regex: a-z, A-Z, 0-9, underscore, period; 3-20 characters
+  const usernameRegex = /^[a-zA-Z0-9_.]{3,20}$/
+
   useEffect(() => {
-    if (password && confirmPassword && password !== confirmPassword) {
-      setPasswordError("Passwords do not match")
+    if (password && confirmPassword) {
+      if (password !== confirmPassword) {
+        setPasswordError("Passwords do not match")
+      } else if (password.length < 8) {
+        setPasswordError("Password must be at least 8 characters")
+      } else {
+        setPasswordError("")
+      }
     } else {
       setPasswordError("")
     }
   }, [password, confirmPassword])
 
-  
-const handleRegister = async () => {
-  if (passwordError) return
-  
-  setIsLoading(true)
-  setError("")
-  
-  try {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password, name }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error || "Registration failed")
+  const handleRegister = async () => {
+    // Validate password length
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters")
+      return
     }
+    if (passwordError) return
 
-    // Auto login after registration
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false
-    })
-
-    if (result?.error) {
-      throw new Error(result.error)
-    }
-
-    // Show username setup modal
-    setShowUsernameModal(true)
-  } catch (err) {
-    setError(err.message || "Registration failed")
-  } finally {
-    setIsLoading(false)
-  }
-}
-
-    const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    setIsLoading(true)
     setError("")
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl
-    })
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, name }),
+      })
 
-    if (result?.error) {
-      setError(result.error)
-    } else {
-      router.push(callbackUrl)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed")
+      }
+
+      // Show username setup modal after successful registration
+      setShowUsernameModal(true)
+    } catch (err) {
+      setError(err.message || "Registration failed")
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleUsernameSubmit = async () => {
+    // Validate username
     if (!username) {
       setUsernameError("Username is required")
+      return
+    }
+
+    // Check username format
+    if (!usernameRegex.test(username)) {
+      setUsernameError(
+        "Username must be 3-20 characters and contain only letters, numbers, underscores, or periods"
+      )
       return
     }
 
@@ -108,7 +102,7 @@ const handleRegister = async () => {
 
     try {
       // Check if username exists
-      const checkResponse = await fetch(`/api/auth/check-username?username=${username}`)
+      const checkResponse = await fetch(`/api/auth/check-username?username=${username.toLowerCase()}`)
       const checkData = await checkResponse.json()
 
       if (checkData.exists) {
@@ -116,21 +110,36 @@ const handleRegister = async () => {
         return
       }
 
-      // Update username
+      // Update username (store as lowercase for case-insensitive comparison)
       const updateResponse = await fetch("/api/auth/update-username", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, username }),
+        body: JSON.stringify({ email, username: username.toLowerCase() }),
       })
 
       if (!updateResponse.ok) {
         throw new Error("Failed to update username")
       }
 
-      // Redirect to welcome page or dashboard
-      router.push("/dashboard")
+      // Auto login after username is set
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl,
+      })
+
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+
+      // Mark username as set to allow dialog to close
+      setUsernameSet(true)
+      setShowUsernameModal(false)
+      // Redirect to dashboard
+      router.push(callbackUrl)
     } catch (err) {
       setUsernameError(err.message || "Failed to set username")
     } finally {
@@ -138,6 +147,15 @@ const handleRegister = async () => {
     }
   }
 
+  // Prevent dialog from closing unless username is set
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!usernameSet) {
+      // Keep dialog open if username is not set
+      setShowUsernameModal(true)
+    } else {
+      setShowUsernameModal(open)
+    }
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-black p-4">
@@ -198,7 +216,7 @@ const handleRegister = async () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 "
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
@@ -256,12 +274,13 @@ const handleRegister = async () => {
       </div>
 
       {/* Username Setup Modal */}
-      <Dialog open={showUsernameModal} onOpenChange={setShowUsernameModal}>
+      <Dialog open={showUsernameModal} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-800">
           <DialogHeader>
             <DialogTitle className="text-white">Choose a Username</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Your username will be used in your profile URL and for mentions.
+              Your username must be 3-20 characters, using only letters, numbers, underscores, or periods. 
+              Choose a unique username to continue.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -283,13 +302,6 @@ const handleRegister = async () => {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              className="border-gray-700 text-gray-300 hover:bg-gray-800"
-              onClick={() => setShowUsernameModal(false)}
-            >
-              Skip for now
-            </Button>
             <Button 
               className="gradient-btn button-hover"
               onClick={handleUsernameSubmit}
