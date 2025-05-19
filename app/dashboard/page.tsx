@@ -1,20 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MainSidebar } from "@/components/main-sidebar"
 import { ChatInterface } from "@/components/chat-interface"
 import { ToolsSidebar } from "@/components/tools-sidebar"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { Menu, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
-
-
+import { useSearchParams, usePathname, useRouter } from 'next/navigation'
+import { Loader2 } from "lucide-react"
 
 export default function Home() {
   const [activeTool, setActiveTool] = useState<string | null>(null)
-    const searchParams = useSearchParams()
+  const [isLoading, setIsLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const router = useRouter()
   const chatId = searchParams.get('chat')
 
   const handleToolSelect = (toolId: string) => {
@@ -26,15 +27,18 @@ export default function Home() {
     }
   }
 
-    useEffect(() => {
+  useEffect(() => {
     const loadChat = async () => {
       if (chatId) {
         try {
+          setIsLoading(true)
           const response = await fetch(`/api/chat/history/${chatId}`)
           const data = await response.json()
           // Set messages sesuai data dari database
         } catch (error) {
           console.error('Failed to load chat:', error)
+        } finally {
+          setIsLoading(false)
         }
       }
     }
@@ -47,8 +51,15 @@ export default function Home() {
       <MainSidebar />
       <SidebarInset className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden relative">
+          {/* Loading overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          )}
+
           {/* Mobile menu buttons - only visible on small screens */}
-          <div className="md:hidden fixed top-4 left-4 z-50">
+          <div className="md:hidden fixed top-4 left-4 z-40">
             <Button
               variant="outline"
               size="icon"
@@ -60,7 +71,7 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className="md:hidden fixed top-4 right-4 z-50">
+          <div className="md:hidden fixed top-4 right-4 z-40">
             <Button
               variant="outline"
               size="icon"
@@ -72,7 +83,7 @@ export default function Home() {
             </Button>
           </div>
 
-           <ChatInterface 
+          <ChatInterface 
             activeTool={activeTool} 
             currentChatId={chatId}
           />

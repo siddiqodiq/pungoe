@@ -1,5 +1,16 @@
 import { RouteGuard } from '@/components/route-guard'
 import './database.css'
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Database - CVEs and Payloads",
+  description: "Database to see payload and other information",
+  icons: {
+    icon: "logo.ico",
+    shortcut: "logo.ico",
+    apple: "/apple-touch-icon.png",
+  },
+}
 
 export default function DatabaseLayout({
   children,

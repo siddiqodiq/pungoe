@@ -60,7 +60,7 @@ const handleLogin = async () => {
         <Card className="w-full border-gray-800 bg-black/80 backdrop-blur-md">
           <CardHeader className="space-y-1 text-center">
             <Logoglitch className="mx-auto h-[80px] w-auto text-white" />
-            <CardTitle className="text-2xl font-bold gradient-text text-gray-400">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold gradient-text text-gray-400">Welcome, Hackers!</CardTitle>
             <CardDescription className="text-gray-400">Enter your credentials to access your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

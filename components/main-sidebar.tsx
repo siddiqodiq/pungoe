@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Shield, Database, Settings, LogOut, User, Bell, Moon, HelpCircle, Plus, MoreVertical } from "lucide-react"
+import { Shield, Database, Settings, LogOut, User, Bell, Moon, HelpCircle, Plus, MoreVertical, Loader2 } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +40,8 @@ export function MainSidebar() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [isLoading, setIsLoading] = useState(false) 
+  
 
 
   // Refresh history ketika route berubah atau session berubah
@@ -123,9 +125,10 @@ export function MainSidebar() {
 
   const currentChatId = searchParams.get('chat')
 
-  const loadChatHistory = async () => {
+    const loadChatHistory = async () => {
     if (!session?.user?.id) return
     
+    setIsLoading(true) // Set loading true sebelum fetch
     try {
       const response = await fetch('/api/chat/history')
       const data = await response.json()
@@ -137,6 +140,8 @@ export function MainSidebar() {
         description: "Failed to load chat history",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false) // Set loading false setelah selesai
     }
   }
 
@@ -213,55 +218,73 @@ export function MainSidebar() {
       </SidebarGroup>
 
 
-        <SidebarGroup>
-        <div className="flex items-center justify-between px-4 py-2">
-          <SidebarGroupLabel>Chat History</SidebarGroupLabel>
-          <button 
-            onClick={handleNewChat}
-            className="p-1 rounded-full hover:bg-gray-700 transition-colors"
-            aria-label="New chat"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {chatHistory.map((chat) => (
-              <SidebarMenuItem key={chat.id}>
-                <div className="flex items-center justify-between w-full group">
-                  <SidebarMenuButton
-                    onClick={() => router.push(`/dashboard?chat=${chat.id}`)}
-                    className="flex-1 hover-effect"
+
+<SidebarGroup>
+  <div className="flex items-center justify-between px-4 py-2">
+    <SidebarGroupLabel>Chat History</SidebarGroupLabel>
+    <button 
+      onClick={handleNewChat}
+      className="p-1 rounded-full hover:bg-gray-700 transition-colors"
+      aria-label="New chat"
+      disabled={isLoading} // Disable saat loading
+    >
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Plus className="h-4 w-4" />
+      )}
+    </button>
+  </div>
+  <SidebarGroupContent>
+    {isLoading ? (
+      <div className="flex justify-center items-center p-4">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+      </div>
+    ) : (
+      <SidebarMenu>
+        {chatHistory.map((chat) => (
+          <SidebarMenuItem key={chat.id}>
+            <div className="flex items-center justify-between w-full group">
+              <SidebarMenuButton
+                onClick={() => router.push(`/dashboard?chat=${chat.id}`)}
+                className="flex-1 hover-effect"
+              >
+                <span className="truncate">
+                  {chat.title || 'New Chat'}
+                </span>
+              </SidebarMenuButton>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    className="p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Chat options"
+                    disabled={isLoading} // Disable saat loading
                   >
-                    <span className="truncate">
-                      {chat.title || 'New Chat'}
-                    </span>
-                  </SidebarMenuButton>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button 
-                        className="p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="Chat options"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteChat(chat.id)}
-                        className="text-red-500 focus:text-red-500"
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <MoreVertical className="h-4 w-4" />
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteChat(chat.id)}
+                    className="text-red-500 focus:text-red-500"
+                    disabled={isLoading} // Disable saat loading
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    )}
+  </SidebarGroupContent>
+</SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <div className="p-4 border-t border-gray-800">

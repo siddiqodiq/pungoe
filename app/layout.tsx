@@ -2,6 +2,17 @@
 import './landing.css'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Login - Pungoe Pentest",
+  description: "Login to Pungoe Pentest",
+  icons: {
+    icon: "logo.ico",
+    shortcut: "logo.ico",
+    apple: "/apple-touch-icon.png",
+  },
+}
 
 const inter = Inter({ subsets: ['latin'] })
 

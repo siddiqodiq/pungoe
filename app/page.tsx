@@ -98,7 +98,7 @@ export default function LandingPage() {
 
         {/* Subtitle */}
         <p className="mt-4 sm:mt-5 text-lg sm:text-xl text-blue-200/80 max-w-2xl mx-auto text-center">
-          Join the digital rebellion - learn to hack ethically and protect the future. 
+          “Built to Hack. Designed to Defend.”
         </p>
 
         {/* Buttons */}
