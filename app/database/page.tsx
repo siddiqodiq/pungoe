@@ -20,7 +20,6 @@ import { Filter, HardDrive, Shield, FileText, List, ArrowLeft } from "lucide-rea
 import { CveTable } from "@/components/database/cve-table"
 import { PayloadTable } from "@/components/database/payload-table"
 import { WordlistTable } from "@/components/database/wordlist-table"
-import { SupportFiles } from "@/components/database/support-files"
 import { SearchHeader } from "@/components/database/search-header"
 import { useRouter } from "next/navigation"
 import router from "next/router"
@@ -152,11 +151,6 @@ export default function SecurityDatabasePage() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* File Pendukung Section */}
-        <div className="mt-8">
-          <SupportFiles />
-        </div>
       </div>
     </div>
   )

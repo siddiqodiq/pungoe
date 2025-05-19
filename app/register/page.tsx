@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Logoglitch } from "@/components/ui/logoglitch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { signIn } from "next-auth/react"
+import '../../app/globals.css'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -176,7 +177,7 @@ export default function RegisterPage() {
             )}
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-medium text-gray-300">
-                Full Name
+                Name
               </label>
               <Input
                 id="name"
@@ -275,11 +276,10 @@ export default function RegisterPage() {
 
       {/* Username Setup Modal */}
       <Dialog open={showUsernameModal} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-800">
+        <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-800 [&>button]:hidden">
           <DialogHeader>
             <DialogTitle className="text-white">Choose a Username</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Your username must be 3-20 characters, using only letters, numbers, underscores, or periods. 
               Choose a unique username to continue.
             </DialogDescription>
           </DialogHeader>
@@ -292,7 +292,7 @@ export default function RegisterPage() {
                 id="username"
                 type="text"
                 placeholder="coolusername"
-                className="bg-gray-800 border-gray-700 focus:border-blue-600"
+                className="bg-gray-800 border-gray-700 focus:border-blue-600 text-gray-300 hover-input"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />

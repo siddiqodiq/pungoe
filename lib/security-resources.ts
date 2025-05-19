@@ -20,6 +20,15 @@ export const payloadTemplates: SecurityResource[] = [
     previewAvailable: true
   },
   {
+  id: "PT-005",
+    name: "🔥 💉XSS Bypass Payload 💉🔥 ",    
+    type: "XSS",
+    size: "2 KB",
+    filePath: "/resources/payloads/xssajib.txt",
+    sourceUrl: "",
+    previewAvailable: true
+  },
+  {
     id: "PT-002",
      name: "DOS Attack Payload, for input forms to down the server",
     type: "BAC",
@@ -46,6 +55,7 @@ export const payloadTemplates: SecurityResource[] = [
     sourceUrl: "",
     previewAvailable: true
   },
+
   
 ]
 
