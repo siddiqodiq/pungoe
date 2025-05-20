@@ -1,4 +1,7 @@
+// app/api/tools/url-fuzzer/route.ts
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic'; // Ensure dynamic handling
 
 export async function POST(req: Request) {
   try {
@@ -6,19 +9,19 @@ export async function POST(req: Request) {
     const target = formData.get('target') as string;
     const file = formData.get('file') as File;
 
-    if (!target || !file) {
-      return NextResponse.json(
-        { error: 'Both target URL and wordlist file are required' },
-        { status: 400 }
-      );
+    if (!target) {
+      return new Response('Target URL is required', { status: 400 });
     }
 
-    // Handle abort signal from client
-    const signal = req.signal;
-    const controller = new AbortController();
-    signal?.addEventListener('abort', () => controller.abort());
+    if (!target.includes('FUZZ')) {
+      return new Response('Target URL must contain "FUZZ" placeholder', { status: 400 });
+    }
 
-    // Forward to Flask backend with abort support
+    if (!file) {
+      return new Response('Wordlist file is required', { status: 400 });
+    }
+
+    // Forward to Flask backend
     const flaskFormData = new FormData();
     flaskFormData.append('target', target);
     flaskFormData.append('file', file);
@@ -26,66 +29,86 @@ export async function POST(req: Request) {
     const flaskResponse = await fetch('http://localhost:5000/api/fuzz', {
       method: 'POST',
       body: flaskFormData,
-      signal: controller.signal, // Pass the abort signal
     });
 
     if (!flaskResponse.ok) {
       const error = await flaskResponse.text();
-      return NextResponse.json(
-        { error: error || 'Failed to perform URL fuzzing' },
-        { status: flaskResponse.status }
-      );
+      return new Response(error || 'Failed to start fuzzing', { status: flaskResponse.status });
     }
 
-    // Return the stream with proper error handling
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        const reader = flaskResponse.body?.getReader();
-        
-        try {
-          while (true) {
-            if (signal?.aborted) {
-              throw new Error('Request aborted by client');
-            }
-            
-            const { done, value } = await reader!.read();
-            if (done) break;
-            controller.enqueue(value);
-          }
-          controller.close();
-        } catch (error) {
-          if (error instanceof Error && error.message === 'Request aborted by client') {
-            console.log('Fuzzing cancelled by client');
-          } else {
-            console.error('Stream error:', error);
-          }
-          controller.error(error);
-        }
-      },
-      cancel() {
-        // Cleanup when client cancels
-        console.log('Client cancelled the fuzzing request');
-      }
-    });
+    // Get session ID from headers
+    const sessionId = flaskResponse.headers.get('X-Session-ID');
 
-    return new Response(readableStream, {
+    // Create a pass-through stream
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+
+    // Pipe the Flask response to our response
+    (async () => {
+      const reader = flaskResponse.body?.getReader();
+      if (!reader) {
+        writer.close();
+        return;
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writer.write(value);
+        }
+      } catch (error) {
+        console.error('Stream error:', error);
+      } finally {
+        writer.close();
+      }
+    })();
+
+    // Return the streaming response
+    return new Response(readable, {
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': 'text/plain',
+        'X-Session-ID': sessionId || '',
       },
     });
 
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.log('Fuzzing cancelled by user');
+    console.error('URL Fuzzer error:', error);
+    return new Response(
+      error instanceof Error ? error.message : 'Internal server error',
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const { session_id } = await req.json();
+
+    if (!session_id) {
+      return new Response('session_id is required', { status: 400 });
+    }
+
+    const flaskResponse = await fetch('http://localhost:5000/api/fuzz/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id }),
+    });
+
+    if (!flaskResponse.ok) {
+      const error = await flaskResponse.json();
       return NextResponse.json(
-        { error: 'Fuzzing cancelled by user' },
-        { status: 499 } // Client Closed Request
+        { error: error.error || 'Failed to stop fuzzing' },
+        { status: flaskResponse.status }
       );
     }
-    
-    console.error('URL fuzzing error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+
+    return NextResponse.json({ status: 'stopped' });
+
+  } catch (error) {
+    console.error('Stop fuzzing error:', error);
+    return new Response(
+      error instanceof Error ? error.message : 'Internal server error',
       { status: 500 }
     );
   }
