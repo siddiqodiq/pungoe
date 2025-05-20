@@ -47,6 +47,15 @@ export const payloadTemplates: SecurityResource[] = [
     previewAvailable: true 
   },
   {
+    id: "PT-007",
+    name: "Portswigger XSS Payloads",
+    type: "XSS",
+    size: "-",
+    filePath: "",
+    sourceUrl: "https://portswigger.net/web-security/cross-site-scripting/cheat-sheet",
+    previewAvailable: false
+  },
+  {
     id: "PT-003",
     name: "Cloudflare WAF Bypass Payload",
     type: "XSS",
