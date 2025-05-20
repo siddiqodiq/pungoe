@@ -22,7 +22,6 @@ import {
   Check, 
   Send,
   AlertCircle,
-  Search,
   StopCircle
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -44,7 +43,7 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
   const [copied, setCopied] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null); // New: AbortController ref
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
   const resultsEndRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +54,6 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
   }, [results]);
 
   useEffect(() => {
-    // Cleanup on component unmount
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -63,36 +61,32 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
     };
   }, []);
 
-  const cleanAnsiCodes = (str: string) => {
-    return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-  };
-
   const formatResultLine = (line: string) => {
-    const cleanLine = cleanAnsiCodes(line);
-    const baseUrl = targetUrl.replace("FUZZ", "");
-    
-    const fullMatch = cleanLine.match(
-      /^(.*?)\s+\[Status: (\d+), Size: (\d+)(?:, Words: \d+)?(?:, Lines: \d+)?(?:, Duration: (\d+)ms)?/
-    );
-
-    if (fullMatch) {
-      const [_, payload, status, size, duration] = fullMatch;
-      const parts = [
-        `${baseUrl}${payload}`,
-        `[Status: ${status}`,
-        `Size: ${size}`,
-        duration && `Duration: ${duration}ms`
-      ].filter(Boolean);
+    // Format the line to highlight important information
+    const parts = line.split('[');
+    if (parts.length > 1) {
+      const statusMatch = line.match(/Status: (\d+)/);
+      const sizeMatch = line.match(/Size: (\d+)/);
       
-      return parts.join(' ') + ']';
+      return (
+        <div className="flex flex-wrap items-baseline gap-1">
+          <span className="text-muted-foreground">{parts[0]}</span>
+          {statusMatch && (
+            <span className={`px-1 rounded ${
+              statusMatch[1] === '200' ? 'bg-green-500/20 text-green-500' :
+              statusMatch[1] === '404' ? 'bg-red-500/20 text-red-500' :
+              'bg-yellow-500/20 text-yellow-500'
+            }`}>
+              Status: {statusMatch[1]}
+            </span>
+          )}
+          {sizeMatch && (
+            <span className="text-blue-500">Size: {sizeMatch[1]}</span>
+          )}
+        </div>
+      );
     }
-
-    const altMatch = cleanLine.match(/^(.*?)\s+\[.*?(\d+)ms\]/);
-    if (altMatch) {
-      return `${baseUrl}${altMatch[1]} [Duration: ${altMatch[2]}ms]`;
-    }
-
-    return cleanLine.trim() ? `${baseUrl}${cleanLine.trim()}` : '';
+    return <div className="text-muted-foreground">{line}</div>;
   };
 
   const handleRunTool = async () => {
@@ -101,41 +95,40 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
       return;
     }
 
-    if (!targetUrl.includes("FUZZ")) {
-      setError("Target URL must contain 'FUZZ' placeholder");
+    if (!wordlistFile) {
+      setError("Wordlist file is required");
       return;
     }
 
-    if (!wordlistFile) {
-      setError("Wordlist file is required");
+    if (!targetUrl.includes("FUZZ")) {
+      setError("Target URL must contain 'FUZZ' placeholder");
       return;
     }
 
     setIsLoading(true);
     setError(null);
     setResults([]);
-    abortControllerRef.current = new AbortController(); // Initialize AbortController
+    abortControllerRef.current = new AbortController();
 
     try {
       const formData = new FormData();
-      formData.append("target", targetUrl);
-      if (wordlistFile) formData.append("file", wordlistFile);
+      formData.append('target', targetUrl);
+      formData.append('file', wordlistFile);
 
-      const response = await fetch('/api/tools/url-fuzzer', {
+      const response = await fetch('/api/tools/fuzz', {
         method: 'POST',
         body: formData,
-        signal: abortControllerRef.current.signal, // Attach abort signal
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Failed to start fuzzing');
+        throw new Error(errorText || 'Failed to start URL fuzzing');
       }
 
       const sessionId = response.headers.get('X-Session-ID');
       setSessionId(sessionId);
 
-      // Handle streaming text response
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body');
 
@@ -149,37 +142,29 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
         const textChunk = decoder.decode(value, { stream: true });
         accumulatedText += textChunk;
 
-        // Process each complete line
         const lines = accumulatedText.split('\n');
-        accumulatedText = lines.pop() || ''; // Save incomplete line for next chunk
+        accumulatedText = lines.pop() || '';
 
         for (const line of lines) {
           if (line.trim()) {
-            const formattedLine = formatResultLine(line);
-            if (formattedLine) {
-              setResults(prev => [...prev, formattedLine]);
-            }
+            setResults(prev => [...prev, line]);
           }
         }
       }
 
-      // Process any remaining content
       if (accumulatedText.trim()) {
-        const formattedLine = formatResultLine(accumulatedText);
-        if (formattedLine) {
-          setResults(prev => [...prev, formattedLine]);
-        }
+        setResults(prev => [...prev, accumulatedText]);
       }
 
       toast({
-        title: "Fuzzing completed",
-        description: `Found ${results.length} results for ${targetUrl}`,
+        title: "URL Fuzzing completed",
+        description: `Found ${results.length} potential paths`,
       });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         toast({
           title: "Fuzzing cancelled",
-          description: "The fuzzing process was cancelled.",
+          description: "The URL fuzzing was cancelled.",
           variant: "destructive",
         });
       } else {
@@ -202,33 +187,31 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
     if (!sessionId) {
       toast({
         title: "No active fuzzing session",
-        description: "No fuzzing session to stop.",
+        description: "No URL fuzzing session to stop.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Abort the ongoing fetch request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
 
-      // Send stop request to backend
-      const response = await fetch('/api/tools/url-fuzzer', {
-        method: 'PUT', // Match the backend route
+      const stopResponse = await fetch('/api/tools/fuzz/stop', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!stopResponse.ok) {
+        const errorData = await stopResponse.json();
         throw new Error(errorData.error || 'Failed to stop fuzzing');
       }
 
       toast({
         title: "Fuzzing stopped",
-        description: "The fuzzing process has been cancelled",
+        description: "The URL fuzzing has been cancelled",
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -272,7 +255,7 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
 
     try {
       const fileContent = results.join('\n');
-      const fileName = `fuzz-results-${targetUrl.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().slice(0, 10)}.txt`;
+      const fileName = `url-fuzzing-results-${new Date().toISOString().slice(0, 10)}.txt`;
 
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -305,7 +288,7 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
             <CardHeader>
               <CardTitle>URL Fuzzer</CardTitle>
               <CardDescription>
-                Discover hidden paths and parameters by fuzzing URLs with a wordlist
+                Discover hidden paths and parameters by fuzzing URLs
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -315,48 +298,51 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="targetUrl">Target URL</Label>
-                <Input
-                  id="targetUrl"
-                  type="text"
-                  placeholder="http://example.com/path?param=FUZZ"
-                  value={targetUrl}
-                  onChange={(e) => setTargetUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Must include "FUZZ" placeholder where the wordlist entries should be inserted
-                </p>
-              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="targetUrl">Target URL (must contain FUZZ)</Label>
+                  <Input
+                    id="targetUrl"
+                    type="text"
+                    placeholder="http://example.com/page.php?param=FUZZ"
+                    value={targetUrl}
+                    onChange={(e) => setTargetUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The word "FUZZ" will be replaced with each word from your wordlist
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="wordlist">Wordlist File</Label>
-                <Input
-                  id="wordlist"
-                  type="file"
-                  accept=".txt,.text"
-                  onChange={(e) => setWordlistFile(e.target.files?.[0] || null)}
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Text file containing one entry per line
-                </p>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="wordlist">Wordlist File</Label>
+                  <Input
+                    id="wordlist"
+                    type="file"
+                    accept=".txt,.text"
+                    onChange={(e) => setWordlistFile(e.target.files?.[0] || null)}
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Text file containing one payload per line
+                  </p>
+                </div>
 
-              <Alert className="bg-gray-800/50 border-gray-700">
-                <Search className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  <p>• The target URL must contain "FUZZ" as placeholder</p>
-                  <p>• Wordlist should be a text file with one entry per line</p>
-                  <p>• Example input: http://testphp.vulnweb.com/showimage.php?file=FUZZ</p>
-                </AlertDescription>
-              </Alert>
+                <Alert className="bg-gray-800/50 border-gray-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <p>• URL must contain the exact string "FUZZ" which will be replaced</p>
+                    <p>• Example: http://testphp.vulnweb.com/showimage.php?file=FUZZ</p>
+                    <p>• Wordlist should contain one payload per line</p>
+                    <p>• Stopping the fuzzing is only possible after the first output appears</p>
+                  </AlertDescription>
+                </Alert>
+              </div>
             </CardContent>
             <CardFooter className="flex gap-2">
               <Button
                 onClick={handleRunTool}
-                disabled={isLoading || !targetUrl || !wordlistFile}
+                disabled={isLoading || !targetUrl || !wordlistFile || !targetUrl.includes("FUZZ")}
                 className="flex-1"
               >
                 {isLoading ? (
@@ -387,17 +373,17 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
           {results.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Fuzzing Results for {targetUrl}</CardTitle>
+                <CardTitle>Fuzzing Results</CardTitle>
                 <CardDescription>
-                  Found {results.length} results
+                  Found {results.length} potential paths
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="relative">
-                  <div className="bg-black p-4 rounded-md font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto">
+                  <div className="bg-black p-4 rounded-md font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto space-y-2">
                     {results.map((result, index) => (
-                      <div key={index} className="whitespace-pre-wrap">
-                        {result}
+                      <div key={index}>
+                        {formatResultLine(result)}
                       </div>
                     ))}
                     <div ref={resultsEndRef} />
@@ -446,7 +432,7 @@ export function UrlFuzzerModal({ tool, isOpen, onClose, onSendToChat }: UrlFuzze
           <DialogHeader>
             <DialogTitle>Cancel Fuzzing Process?</DialogTitle>
             <DialogDescription>
-              The fuzzing process is still running. If you close now, the process will be cancelled.
+              The URL fuzzing is still running. If you close now, the process will be cancelled.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

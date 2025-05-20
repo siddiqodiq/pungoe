@@ -1,7 +1,6 @@
-// app/api/tools/url-fuzzer/route.ts
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic'; // Ensure dynamic handling
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -13,12 +12,12 @@ export async function POST(req: Request) {
       return new Response('Target URL is required', { status: 400 });
     }
 
-    if (!target.includes('FUZZ')) {
-      return new Response('Target URL must contain "FUZZ" placeholder', { status: 400 });
-    }
-
     if (!file) {
       return new Response('Wordlist file is required', { status: 400 });
+    }
+
+    if (!target.includes('FUZZ')) {
+      return new Response('Target URL must contain FUZZ placeholder', { status: 400 });
     }
 
     // Forward to Flask backend
@@ -29,11 +28,12 @@ export async function POST(req: Request) {
     const flaskResponse = await fetch('http://localhost:5000/api/fuzz', {
       method: 'POST',
       body: flaskFormData,
+      signal: req.signal || undefined,
     });
 
     if (!flaskResponse.ok) {
       const error = await flaskResponse.text();
-      return new Response(error || 'Failed to start fuzzing', { status: flaskResponse.status });
+      return new Response(error || 'Failed to start URL fuzzing', { status: flaskResponse.status });
     }
 
     // Get session ID from headers
@@ -73,40 +73,12 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('URL Fuzzer error:', error);
-    return new Response(
-      error instanceof Error ? error.message : 'Internal server error',
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(req: Request) {
-  try {
-    const { session_id } = await req.json();
-
-    if (!session_id) {
-      return new Response('session_id is required', { status: 400 });
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('URL Fuzzing was aborted by client');
+      return new Response('Fuzzing aborted by client', { status: 499 });
     }
-
-    const flaskResponse = await fetch('http://localhost:5000/api/fuzz/stop', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id }),
-    });
-
-    if (!flaskResponse.ok) {
-      const error = await flaskResponse.json();
-      return NextResponse.json(
-        { error: error.error || 'Failed to stop fuzzing' },
-        { status: flaskResponse.status }
-      );
-    }
-
-    return NextResponse.json({ status: 'stopped' });
-
-  } catch (error) {
-    console.error('Stop fuzzing error:', error);
+    
+    console.error('URL Fuzzing error:', error);
     return new Response(
       error instanceof Error ? error.message : 'Internal server error',
       { status: 500 }
