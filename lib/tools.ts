@@ -72,18 +72,11 @@ export const tools: Tool[] = [
     status: "Under Development",
   },
   {
-    id: "7",
-    name: "Nikto",
-    description: "Web server vulnerability scanner.",
-    category: "vulnerability",
-    status: "Under Development",
-  },
-  {
     id: "8",
     name: "XSS Exploiter",
     description: "Exploit XSS vulnerabilities.",
     category: "exploit",
-    status: "Under Development",
+    status: "Available",
   },
   {
     id: "9",

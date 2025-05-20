@@ -15,6 +15,7 @@ import { CorsScannerModal } from "./tools/cors-scanner-modal"
 import { GoogleDorkModal } from "./tools/google-dork-modal"
 import { OpenRedirectModal } from "./tools/open-redirect-modal"
 import { UrlFuzzerModal } from "./tools/url-fuzzer-modal"
+import { XssScanModal } from "./tools/xss-scan-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -152,6 +153,14 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
   case "URL Fuzzer":
   return (
     <UrlFuzzerModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />)
+    case "XSS Exploiter":
+  return (
+    <XssScanModal
       tool={selectedTool}
       isOpen={internalIsOpen}
       onClose={handleClose}
