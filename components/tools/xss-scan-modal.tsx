@@ -435,9 +435,9 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <p>• For single URL scan, include query parameters in the URL</p>
-                  <p>• Batch scan requires a text file with one URL per line</p>
-                  <p>• Default payload uses hahwul XSS hunter</p>
                   <p>• Example: http://testphp.vulnweb.com/search.php?test=query</p>
+                  <p>• Batch scan requires a text file with one URL per line</p>
+                  <p>• Stopping the scan is only possible after the first output appears. To force close, you can close this tool popup.</p>
                 </AlertDescription>
               </Alert>
             </CardContent>
