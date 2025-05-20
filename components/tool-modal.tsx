@@ -14,6 +14,7 @@ import { CvssCalculatorModal } from "./tools/cvss-calculator-modal"
 import { CorsScannerModal } from "./tools/cors-scanner-modal"
 import { GoogleDorkModal } from "./tools/google-dork-modal"
 import { OpenRedirectModal } from "./tools/open-redirect-modal"
+import { UrlFuzzerModal } from "./tools/url-fuzzer-modal"
 
 interface ToolModalProps {
   toolId: string | null
@@ -147,7 +148,16 @@ export function ToolModal({ toolId, isOpen, onClose, onSendToChat }: ToolModalPr
       onClose={handleClose}
       onSendToChat={onSendToChat}
     />
-  );
+  )
+  case "URL Fuzzer":
+  return (
+    <UrlFuzzerModal
+      tool={selectedTool}
+      isOpen={internalIsOpen}
+      onClose={handleClose}
+      onSendToChat={onSendToChat}
+    />)
+    ;
 
     default:
       return (

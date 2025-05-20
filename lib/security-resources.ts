@@ -38,6 +38,15 @@ export const payloadTemplates: SecurityResource[] = [
     previewAvailable: true
   },
   {
+    id: "PT-006",
+    name: "LFI Payloads",
+    type: "LFI", 
+    size: "1 KB",
+    filePath: "/resources/payloads/lfi.txt",
+    sourceUrl: "",
+    previewAvailable: true 
+  },
+  {
     id: "PT-003",
     name: "Cloudflare WAF Bypass Payload",
     type: "XSS",

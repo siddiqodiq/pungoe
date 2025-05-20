@@ -62,7 +62,7 @@ export const tools: Tool[] = [
     name: "URL Fuzzer",
     description: "Fuzz URLs to discover hidden paths.",
     category: "exploit",
-    status: "Under Development",
+    status: "Available",
   },
   {
     id: "6",
@@ -119,6 +119,13 @@ export const tools: Tool[] = [
     description: "Exploit open redirect vulnerabilities.",
     category: "exploit",
     status: "Available",
+  },
+  {
+    id: "19",
+    name: "LFI Exploiter",
+    description: "Exploit Local File Inclusion vulnerabilities.",
+    category: "exploit",
+    status: "Under Development",
   }
 ]
 
