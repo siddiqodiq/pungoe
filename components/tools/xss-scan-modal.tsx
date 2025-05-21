@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Loader2, 
   Play, 
@@ -22,7 +22,9 @@ import {
   Check, 
   Send,
   AlertCircle,
-  StopCircle
+  StopCircle,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -45,6 +47,7 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
   const [customPayloadFile, setCustomPayloadFile] = useState<File | null>(null);
   const [scanMode, setScanMode] = useState("1");
   const [copied, setCopied] = useState(false);
+  const [scanCompleted, setScanCompleted] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -91,7 +94,7 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
     return <div>{cleanLine.trim()}</div>;
   };
 
-  const handleRunTool = async () => {
+   const handleRunTool = async () => {
     if (['1', '2', '3'].includes(scanMode) && !targetUrl) {
       setError("Target URL is required for this mode");
       return;
@@ -110,6 +113,7 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
     setIsLoading(true);
     setError(null);
     setResults([]);
+    setScanCompleted(false);
     abortControllerRef.current = new AbortController();
 
     try {
@@ -158,25 +162,31 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
 
         for (const line of lines) {
           if (line.trim()) {
-            const formattedLine = formatResultLine(line);
-            if (formattedLine) {
-              setResults(prev => [...prev, line]);
-            }
+            setResults(prev => [...prev, line]);
           }
         }
       }
 
       if (accumulatedText.trim()) {
-        const formattedLine = formatResultLine(accumulatedText);
-        if (formattedLine) {
-          setResults(prev => [...prev, accumulatedText]);
-        }
+        setResults(prev => [...prev, accumulatedText]);
       }
 
+      // Check if any vulnerabilities were found
+      const vulnerabilitiesFound = results.some(line => 
+        line.includes('[POC]') || 
+        line.toLowerCase().includes('vulnerable') || 
+        line.toLowerCase().includes('xss')
+      );
+
       toast({
-        title: "XSS Scan completed",
-        description: `Found ${results.length} potential vulnerabilities`,
+        title: vulnerabilitiesFound ? "XSS Scan completed" : "No vulnerabilities found",
+        description: vulnerabilitiesFound 
+          ? `Found ${results.length} potential vulnerabilities` 
+          : "No XSS vulnerabilities detected in the target",
+        variant: vulnerabilitiesFound ? "default" : "success"
       });
+
+      setScanCompleted(true);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         toast({
@@ -299,7 +309,7 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
 
   return (
     <>
-      <BaseToolModal tool={tool} isOpen={isOpen} onClose={handleCloseAttempt}>
+     <BaseToolModal tool={tool} isOpen={isOpen} onClose={handleCloseAttempt}>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <Card>
             <CardHeader>
@@ -310,9 +320,11 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
             </CardHeader>
             <CardContent className="space-y-4">
               {error && (
-                <div className="p-3 rounded-md bg-red-500/10 border border-red-500/30 text-red-500 text-sm">
-                  {error}
-                </div>
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
               <Tabs defaultValue="single" className="w-full">
@@ -431,7 +443,7 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
                 </TabsContent>
               </Tabs>
 
-              <Alert className="bg-gray-800/50 border-gray-700">
+               <Alert className="bg-gray-800/50 border-gray-700">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <p>• For single URL scan, include query parameters in the URL</p>
@@ -475,56 +487,82 @@ export function XssScanModal({ tool, isOpen, onClose, onSendToChat }: XssScanMod
             </CardFooter>
           </Card>
 
-          {results.length > 0 && (
+          {(results.length > 0 || scanCompleted) && (
             <Card>
               <CardHeader>
                 <CardTitle>Scan Results</CardTitle>
                 <CardDescription>
-                  Found {results.length} potential vulnerabilities
+                  {results.some(line => line.includes('[POC]')) 
+                    ? `Found ${results.filter(line => line.includes('[POC]')).length} potential vulnerabilities`
+                    : "No vulnerabilities found"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="relative">
-                  <div className="bg-black p-4 rounded-md font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto space-y-2">
-                    {results.map((result, index) => (
-                      <div key={index}>
-                        {formatResultLine(result)}
+                  {results.length > 0 ? (
+                    <>
+                      <div className="bg-black p-4 rounded-md font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto space-y-2">
+                        {results.map((result, index) => (
+                          <div key={index}>
+                            {formatResultLine(result)}
+                          </div>
+                        ))}
+                        <div ref={resultsEndRef} />
                       </div>
-                    ))}
-                    <div ref={resultsEndRef} />
-                  </div>
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => {
-                        navigator.clipboard.writeText(results.join('\n'));
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                      aria-label="Copy results"
-                    >
-                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={handleDownloadResults}
-                      aria-label="Download results"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    {onSendToChat && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => onSendToChat(results.join('\n'))}
-                        aria-label="Send to chat"
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(results.join('\n'));
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          }}
+                          aria-label="Copy results"
+                        >
+                          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={handleDownloadResults}
+                          aria-label="Download results"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        {onSendToChat && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => onSendToChat(results.join('\n'))}
+                            aria-label="Send to chat"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <Alert variant={scanCompleted ? "success" : "default"}>
+                      {scanCompleted ? (
+                        <>
+                          <ShieldCheck className="h-4 w-4" />
+                          <AlertTitle>No vulnerabilities found</AlertTitle>
+                          <AlertDescription>
+                            The scan completed successfully but no XSS vulnerabilities were detected in the target. You can try different payloads or check the target manually.
+                          </AlertDescription>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldAlert className="h-4 w-4" />
+                          <AlertTitle>Scan in progress</AlertTitle>
+                          <AlertDescription>
+                            The scan is currently running. Results will appear here when available.
+                          </AlertDescription>
+                        </>
+                      )}
+                    </Alert>
+                  )}
                 </div>
               </CardContent>
             </Card>
