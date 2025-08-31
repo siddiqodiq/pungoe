@@ -102,7 +102,38 @@ export async function POST(req: Request) {
       if (agentResponse) {
         const { toolName, result } = agentResponse;
         
-        // Return streaming response dengan indikator agent
+        // Format response content
+        let responseContent = '';
+        if (toolName === 'Subdomain Enumeration') {
+          // Format response content (existing code)
+          if (result.error) {
+            responseContent = `I tried to find subdomains, but encountered an error: ${result.error}`;
+          } else if (result.success && Array.isArray(result.subdomains)) {
+            const formattedSubdomains = result.subdomains.map((s: any) => `- ${s}`).join('\n');
+            responseContent = `Here are the subdomains I found:\n\n${formattedSubdomains}\n\nTotal: ${result.subdomains.length} subdomains`;
+          } else {
+            responseContent = `I tried to find subdomains, but couldn't get any results.`;
+          }
+        }
+        
+        // Save to database first
+        if (chat?.id && responseContent.trim()) {
+          try {
+            await prisma.message.create({
+              data: {
+                chatId: chat.id,
+                content: responseContent,
+                role: 'ASSISTANT',
+                metadata: { tool: toolName }
+              }
+            });
+            console.log('✅ Agent response saved to database');
+          } catch (dbError) {
+            console.error('❌ Failed to save agent response:', dbError);
+          }
+        }
+        
+        // Return streaming response (existing code)
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
@@ -112,19 +143,6 @@ export async function POST(req: Request) {
             ));
             
             // Send content
-            let responseContent = '';
-            if (toolName === 'Subdomain Enumeration') {
-              // PERBAIKI: Hapus deklarasi responseContent kedua
-              if (result.error) {
-                responseContent = `I tried to find subdomains, but encountered an error: ${result.error}`;
-              } else if (result.success && Array.isArray(result.subdomains)) {
-                const formattedSubdomains = result.subdomains.map((s: any) => `- ${s}`).join('\n');
-                responseContent = `Here are the subdomains I found:\n\n${formattedSubdomains}\n\nTotal: ${result.subdomains.length} subdomains`;
-              } else {
-                responseContent = `I tried to find subdomains, but couldn't get any results.`;
-              }
-            }
-            
             controller.enqueue(encoder.encode(
               JSON.stringify({ type: 'content', data: responseContent }) + '\n'
             ));

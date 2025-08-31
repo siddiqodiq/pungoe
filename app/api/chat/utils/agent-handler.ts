@@ -12,8 +12,15 @@ const DOMAIN_REGEX = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9][-a-zA-Z0-9]{0,62}(?
 export function detectSubdomainIntent(message: string): boolean {
   const subdomainKeywords = [
     'find subdomains', 'search subdomains', 'list subdomains', 'enumerate subdomains',
-    'subdomain enumeration', 'subdomain finder', 'subdomain discovery',
-    'cari subdomain', 'temukan subdomain', 'daftar subdomain'
+    'subdomain enumeration', 'subdomain finder', 'subdomain discovery', 'discover subdomains',
+    'scan for subdomains', 'subdomain scan', 'subdomain crawler', 'automated subdomain scan',
+    'subdomain agent', 'subdomain bot', 'run subdomain agent', 'launch subdomain scan',
+    'agentic subdomain search', 'automated subdomain discovery', 'subdomain automation',
+    
+    // Bahasa Indonesia umum
+    'cari subdomain', 'temukan subdomain', 'daftar subdomain', 'pindai subdomain',
+    'subdomain enumeration', 'agen subdomain', 'bot subdomain', 'scan subdomain otomatis',
+    'subdomain otomatis', 'temukan subdomain secara otomatis', 'subdomain discovery otomatis'
   ];
   
   // Check if message contains domain
