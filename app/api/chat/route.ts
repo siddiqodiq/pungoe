@@ -8,6 +8,7 @@ import { BufferMemory } from 'langchain/memory'
 import { ChatMessageHistory } from 'langchain/stores/message/in_memory'
 import { AIMessage, HumanMessage } from '@langchain/core/messages'
 import { getKnowledgeBaseResponse, getKnowledgeBaseResponseStream } from './utils/chroma'
+import { executeAgentAction } from './utils/agent-handler'
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -91,6 +92,55 @@ export async function POST(req: Request) {
       }
     }
 
+    // Get last user message
+    const lastUserMessage = messages.filter((m: { role: string }) => m.role === 'user').pop();
+    
+    if (lastUserMessage) {
+      // Check if agent can handle this request
+      const agentResponse = await executeAgentAction(lastUserMessage.content);
+      
+      if (agentResponse) {
+        const { toolName, result } = agentResponse;
+        
+        // Return streaming response dengan indikator agent
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            // Send agent indicator first
+            controller.enqueue(encoder.encode(
+              JSON.stringify({ type: 'agent_action', tool: toolName }) + '\n'
+            ));
+            
+            // Send content
+            let responseContent = '';
+            if (toolName === 'Subdomain Enumeration') {
+              // Handle subdomain result formatting
+              let responseContent = '';
+              
+              if (result.error) {
+                responseContent = `I tried to find subdomains, but encountered an error: ${result.error}`;
+              } else if (result.success && Array.isArray(result.subdomains)) {
+                const formattedSubdomains = result.subdomains.map((s: any) => `- ${s}`).join('\n');
+                responseContent = `Here are the subdomains I found:\n\n${formattedSubdomains}\n\nTotal: ${result.subdomains.length} subdomains`;
+              } else {
+                responseContent = `I tried to find subdomains, but couldn't get any results.`;
+              }
+            }
+            
+            controller.enqueue(encoder.encode(
+              JSON.stringify({ type: 'content', data: responseContent }) + '\n'
+            ));
+            
+            controller.close();
+          }
+        });
+        
+        return new Response(stream, { 
+          headers: { 'Content-Type': 'text/plain', 'X-Chat-Id': chatId || '' }
+        });
+      }
+    }
+    
     // Prepare messages for Ollama (original logic)
     const ollamaMessages: { role: string; content: any }[] = []
     
