@@ -422,20 +422,69 @@ const TypingIndicator = () => (
       ));
 
       const decoder = new TextDecoder();
-      
+      let buffer = "";
+      let isJsonStream = true; // Asumsikan format JSON sampai terjadi error parsing
+
       while (streamingRef.current && !abortControllerRef.current?.signal.aborted) {
         try {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          fullContent += chunk;
           
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: fullContent } 
-              : msg
-          ));
+          if (isJsonStream) {
+            buffer += chunk;
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ""; // Simpan baris yang mungkin belum lengkap
+
+            let processedContent = "";
+            let agentAction = "";
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const data = JSON.parse(line);
+                
+                if (data.type === 'agent_action') {
+                  // Handle agent action (tampilkan sebagai activity indicator)
+                  agentAction = `🔍 Running tool: ${data.tool}...\n\n`;
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, content: agentAction + processedContent } 
+                      : msg
+                  ));
+                } 
+                else if (data.type === 'content') {
+                  // Handle regular content
+                  processedContent = data.data;
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, content: agentAction + processedContent } 
+                      : msg
+                  ));
+                }
+                // Bisa tambahkan handler untuk tipe lain jika perlu
+              } catch (parseError) {
+                // Fallback to plain text if parsing fails
+                console.warn("JSON parsing failed, switching to plain text mode", parseError);
+                isJsonStream = false;
+                fullContent += line + '\n' + buffer;
+                buffer = '';
+                setMessages(prev => prev.map(msg => 
+                  msg.id === assistantMessageId 
+                    ? { ...msg, content: fullContent } 
+                    : msg
+                ));
+                break;
+              }
+            }
+          } else {
+            // Plain text mode
+            fullContent += chunk;
+            setMessages(prev => prev.map(msg => 
+              msg.id === assistantMessageId ? { ...msg, content: fullContent } : msg
+            ));
+          }
           
           if (isAtBottom && !scrollLockRef.current) {
             scrollToBottom('auto')
@@ -641,20 +690,69 @@ const TypingIndicator = () => (
       ));
 
       const decoder = new TextDecoder();
-      
+      let buffer = "";
+      let isJsonStream = true; // Asumsikan format JSON sampai terjadi error parsing
+
       while (streamingRef.current && !abortControllerRef.current?.signal.aborted) {
         try {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          fullContent += chunk;
           
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: fullContent } 
-              : msg
-          ));
+          if (isJsonStream) {
+            buffer += chunk;
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ""; // Simpan baris yang mungkin belum lengkap
+
+            let processedContent = "";
+            let agentAction = "";
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const data = JSON.parse(line);
+                
+                if (data.type === 'agent_action') {
+                  // Handle agent action (tampilkan sebagai activity indicator)
+                  agentAction = `🔍 Running tool: ${data.tool}...\n\n`;
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, content: agentAction + processedContent } 
+                      : msg
+                  ));
+                } 
+                else if (data.type === 'content') {
+                  // Handle regular content
+                  processedContent = data.data;
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, content: agentAction + processedContent } 
+                      : msg
+                  ));
+                }
+                // Bisa tambahkan handler untuk tipe lain jika perlu
+              } catch (parseError) {
+                // Fallback to plain text if parsing fails
+                console.warn("JSON parsing failed, switching to plain text mode", parseError);
+                isJsonStream = false;
+                fullContent += line + '\n' + buffer;
+                buffer = '';
+                setMessages(prev => prev.map(msg => 
+                  msg.id === assistantMessageId 
+                    ? { ...msg, content: fullContent } 
+                    : msg
+                ));
+                break;
+              }
+            }
+          } else {
+            // Plain text mode
+            fullContent += chunk;
+            setMessages(prev => prev.map(msg => 
+              msg.id === assistantMessageId ? { ...msg, content: fullContent } : msg
+            ));
+          }
           
           if (isAtBottom && !scrollLockRef.current) {
             scrollToBottom('auto')

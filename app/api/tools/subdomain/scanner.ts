@@ -6,7 +6,6 @@ interface ScanOptions {
   }
   
   export async function scanSubdomains(domain: string, options: ScanOptions = {}) {
-    // Implementasi khusus subdomain scanning
     const flaskResponse = await fetch(`${kaliToolsUrl}/api/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,5 +16,10 @@ interface ScanOptions {
       throw new Error(await flaskResponse.text());
     }
   
-    return await flaskResponse.json();
+    const result = await flaskResponse.json();
+    return {
+      success: true,
+      subdomains: result.output.split('\n').filter(Boolean),
+      rawOutput: result.output
+    };
   }

@@ -114,9 +114,7 @@ export async function POST(req: Request) {
             // Send content
             let responseContent = '';
             if (toolName === 'Subdomain Enumeration') {
-              // Handle subdomain result formatting
-              let responseContent = '';
-              
+              // PERBAIKI: Hapus deklarasi responseContent kedua
               if (result.error) {
                 responseContent = `I tried to find subdomains, but encountered an error: ${result.error}`;
               } else if (result.success && Array.isArray(result.subdomains)) {
